@@ -37,3 +37,6 @@
 *.vcxproj
 *.filters
 *.user
+
+# original image file
+resource/raw/lena-original.jpeg
