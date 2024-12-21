@@ -1,37 +1,20 @@
-// ConvertRGBToGrayscale.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <vector>
 #include "convertGrayscale.hpp"
 #include "imageUtil.hpp"
+#include "cv_pipe.h"
 
 using namespace std;
 
-int main()
-{
-    string imagePath = "C:\\Users\\LENOVO\\OneDrive\\Documents\\GitHub\\Image-Enhancement-In-Parallel\\resource\\raw\\lena.jpeg";
-
-    cv::Mat rgbImage = readImage(imagePath);
-
-    if (rgbImage.empty()) {
-        // dont have data 
-        printf("Unable to retreive image place check the file path");
-        return -1;
-    }
-
-    if (rgbImage.channels() < 3) {
-        // not RGB
-        printf("Image is not in RGB");
-        return -1;
-    }
+cv::Mat& startProcessing(cv::Mat& out_img, cv::Mat& in_img) {
 
     // get width and height 
-    int width = rgbImage.cols;
-    int height = rgbImage.rows;
+    int width = in_img.cols;
+    int height = in_img.rows;
 
     // convert image to grayscale 
-    uint8_t* grayscaleImage = rgb_to_grayscale(rgbImage.data, width, height);
+    uint8_t* grayscaleImage = rgb_to_grayscale(in_img.data, width, height);
 
     // check unsuccess 
     if (!grayscaleImage) {
@@ -40,22 +23,45 @@ int main()
     }
 
     // convert back
-    cv::Mat grayscaleMat(height, width, CV_8UC1, grayscaleImage);
+    cv::Mat out_img(height, width, CV_8UC1, grayscaleImage);
 
-    cv::imshow("Original Image", rgbImage);
-    cv::imshow("GrayScale Image", grayscaleMat);
-    cv::waitKey(0);
-
-    return 0;
+    return out_img;
 }
 
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
+int main(int argc, char *argv[])
+{
+    int c;
+    std::vector<char*> img_filenames;
+    init_cv_pipe_comm(argc, argv, true);
 
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
+    reset_getopt();
+    while ((c = getopt(argc, argv, "p:")) != -1) {
+        switch (c) {
+        case 'p':
+            // Do nothing because it should be handled by cv_pipe
+            break;
+        case '?':
+            // Abort when encountering an unknown option
+            return -1;
+        }
+    }
+    // Get all filenames from the non-option arguments
+    for (int index = optind; index < argc; index++)
+        img_filenames.push_back(argv[index]);
+
+    for (auto filename : img_filenames) {
+        std::cout << filename << std::endl;
+        // Load the filename image
+        cv::Mat image = cv::imread(filename);
+        if (image.empty()) {
+            std::cerr << "Unable to load image: " << filename << std::endl;
+            return -1;
+        }
+        cv::Mat gray_img;
+        // Convert color image to grayscale image
+        gray_img = color_to_grayscale(gray_img, image);
+        cv_imshow(gray_img);
+    }
+
+    return finalize_cv_pipe_comm();
+}
