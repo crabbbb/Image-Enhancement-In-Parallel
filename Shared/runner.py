@@ -3,6 +3,7 @@ import threading
 import cv2
 from google.colab.patches import cv2_imshow
 import numpy as np
+import matplotlib.pyplot as plt
 
 def tee_pipe(pipe, out):
     for line in pipe:
@@ -43,8 +44,18 @@ def execute(filename, *args, pipe_name='/tmp/my_pipe'):
                 break
             frame = np.frombuffer(frame_data, dtype=np.uint8).reshape((image_size[1], image_size[0], image_size[2]))
             # Display the received frame
-            cv2_imshow(frame)
+            # cv2_imshow(frame)
+
+            # check if the image is grayscale or color
+            if frame.shape[2] == 1:  
+                # grayscale
+                plt.imshow(frame, cmap='gray')
+            else: 
+                plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+            plt.axis('off')
+            plt.show()
 
     proc.wait()                 # Wait for subprocess to exit
     os.remove(pipe_name)        # Clean up the named pipe
-    cv2.destroyAllWindows()
+    # cv2.destroyAllWindows()
