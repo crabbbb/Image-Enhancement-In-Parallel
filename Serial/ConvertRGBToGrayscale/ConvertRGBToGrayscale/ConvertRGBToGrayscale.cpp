@@ -6,7 +6,7 @@
 
 using namespace std;
 
-cv::Mat& startProcessing(cv::Mat& in_img) {
+cv::Mat startProcessing(cv::Mat& in_img) {
 
     // get width and height 
     int width = in_img.cols;
@@ -50,9 +50,8 @@ int main(int argc, char *argv[])
             std::cerr << "Unable to load image: " << filename << std::endl;
             return -1;
         }
-        cv::Mat gray_img;
         // Convert color image to grayscale image
-        gray_img = color_to_grayscale(gray_img, image);
+        cv::Mat gray_img = startProcessing(image);
         cv_imshow(gray_img);
     }
 
