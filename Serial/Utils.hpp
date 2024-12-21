@@ -1,5 +1,6 @@
 #pragma once
 #include <complex>
+#include <opencv2/opencv.hpp>
 
 using namespace std;
 
