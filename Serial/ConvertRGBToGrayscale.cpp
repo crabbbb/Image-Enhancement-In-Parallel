@@ -58,7 +58,7 @@ cv::Mat startProcessing(cv::Mat& in_img) {
     cv::imwrite("gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
     // convert back
-    cv::Mat out_img = fromUint8ToMat(spatialImage, height, width);
+    cv::Mat out_img = fromUint8ToMat(spatialImage, width, height);
     cv::imwrite("inverse.jpg", out_img);
 
     return out_img;
