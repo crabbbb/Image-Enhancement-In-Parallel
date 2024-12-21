@@ -65,6 +65,11 @@ void cleanup2DArray(complex<double>**& array, int height) {
     }
 }
 
+// Check if number is power of 2
+bool isPowerOfTwo(int n) {
+    return n && !(n & (n - 1));
+}
+
 // testing section
 void testConversionToAndFromComplex() {
     const int width = 4;

@@ -17,8 +17,16 @@ cv::Mat startProcessing(cv::Mat& in_img) {
     // get width and height 
     int width = in_img.cols;
     int height = in_img.rows;
+
+    // ensure image dimensions are in powers of 2
+    if (!isPowerOfTwo(width) || !isPowerOfTwo(height)) {
+      cout << "Image size is not in powers of 2." << endl;
+      cout << "Displying back original image..." << endl;
+      return in_img;
+    }
+
     // cutoff frequency for the Gaussian High-Pass Filter
-    double cutoff_frequency = 0.5;
+    double cutoff_frequency = 128;
 
     // start time 
     auto start = chrono::high_resolution_clock::now();
