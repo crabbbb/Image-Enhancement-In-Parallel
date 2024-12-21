@@ -51,7 +51,7 @@ def execute(filename, *args, pipe_name='/tmp/my_pipe'):
                 # grayscale
                 plt.imshow(frame, cmap='gray')
             else: 
-                plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))  
 
             plt.axis('off')
             plt.show()
