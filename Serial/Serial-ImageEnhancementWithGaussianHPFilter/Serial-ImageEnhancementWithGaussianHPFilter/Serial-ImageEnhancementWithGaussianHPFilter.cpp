@@ -2,10 +2,24 @@
 //
 
 #include <iostream>
+#include "GaussianHPFilter.h"
+
+using namespace std;
+
+void printGaussianFilterTestResults() {
+    bool testResutlts = testGaussianHighPassFilter();
+    if (testResutlts) {
+        cout << "Gaussian High pass filter working." << endl;
+    }
+    else {
+        cout << "Gaussian High pass filter failed." << endl;
+    }
+}
 
 int main()
 {
-    std::cout << "Hello World!\n";
+    printGaussianFilterTestResults();
+    return 0;
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
