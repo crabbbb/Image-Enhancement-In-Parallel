@@ -3,6 +3,8 @@
 
 using namespace std;
 
+cv::Mat fromUint8ToMat(uint8_t* grayscaleImage, int width, int height);
+
 // Cleanup a 2D array
 void cleanup2DArray(complex<double>**& array, int height);
 
