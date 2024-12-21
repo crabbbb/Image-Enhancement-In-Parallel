@@ -18,7 +18,7 @@ cv::Mat startProcessing(cv::Mat& in_img) {
     int width = in_img.cols;
     int height = in_img.rows;
     // cutoff frequency for the Gaussian High-Pass Filter
-    double cutoff_frequency = 2.0;
+    double cutoff_frequency = 0.5;
 
     // start time 
     auto start = chrono::high_resolution_clock::now();
