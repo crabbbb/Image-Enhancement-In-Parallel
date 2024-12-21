@@ -43,3 +43,6 @@ Debug
 
 # original image file
 resource/raw/lena-original.jpeg
+
+# zip files
+*.zip
