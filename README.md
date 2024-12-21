@@ -3,3 +3,11 @@ Distributed System and Parallel Computing Course Assignment, which required to u
 
 - Image Enhancement with using Gaussian High Pass Filter
 - Transfer Image from Spatial domain to Frequency Domain with using Fast-Fourier Transform ( FFT ) 
+
+
+# TODO
+- [ ] Learn How to use Named Pipe
+- [ ] Learn How to Display image on colab 
+- [ ] FFT
+- [ ] IFFT
+- [ ] Gaussian
