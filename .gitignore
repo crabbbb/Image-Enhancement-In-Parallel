@@ -38,5 +38,8 @@
 *.filters
 *.user
 
+# deubg related
+Debug
+
 # original image file
 resource/raw/lena-original.jpeg
