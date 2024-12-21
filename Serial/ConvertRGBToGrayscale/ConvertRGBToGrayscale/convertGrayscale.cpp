@@ -1,7 +1,6 @@
 #include <opencv2/opencv.hpp>
 #include <cstdint>
 #include "convertGrayscale.hpp"
-#include "imageUtil.hpp"
 
 using namespace std;
 
