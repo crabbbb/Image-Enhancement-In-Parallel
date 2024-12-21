@@ -13,7 +13,7 @@ Distributed System and Parallel Computing Course Assignment, which required to u
 - [ ] Gaussian
 
 # OpenCV Installation Step 
-1. Download OpenCV Window .exe file [[Link]](https://github.com/opencv/opencv/releases/tag/4.10.0)
+1. Download OpenCV Window .exe file [[Link]](https://github.com/opencv/opencv/releases/tag/4.10.0)<br/>
     ![alt text](readmeImage/image.png)
 2. Execute .exe extract the opencv folder to C:\opencv
 3. Window open edit the system environment variable > Environment Variable > Advannced > Under System Variable find Path > Double Click > Add a new Path "C:\opencv\build\x64\vc16\bin" > Click OK and close the app
@@ -36,5 +36,5 @@ Distributed System and Parallel Computing Course Assignment, which required to u
         std::cout << "Hello World!\n";
     }
     ```
-6. If Debug facing the error below, restart the Visual Studio 2022
+6. If Debug facing the error below, restart the Visual Studio 2022 <br/>
     ![alt text](readmeImage/image-1.png)
