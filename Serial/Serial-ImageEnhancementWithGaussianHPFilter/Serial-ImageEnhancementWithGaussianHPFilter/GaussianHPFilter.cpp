@@ -14,9 +14,8 @@ double computeHighPassValue(int u, int v, int height, int width, double cutoff_f
 }
 
 // Serial implementation of Gaussian High-Pass Filter
-void gaussianHighPassFilter(
-    const complex<double>** F_shifted, // 2D input array
-    complex<double>** G,              // 2D output array
+complex<double>** gaussianHighPassFilter(
+    complex<double>** F_shifted, // 2D input array
     int width,
     int height,
     double cutoff_frequency)
@@ -34,6 +33,12 @@ void gaussianHighPassFilter(
         }
     }
 
+    // Create the output array G
+    complex<double>** G = new complex<double>*[height];
+    for (int i = 0; i < height; ++i) {
+        G[i] = new complex<double>[width];
+    }
+
     // Step 2: Apply the filter
     for (int u = 0; u < height; ++u) {
         for (int v = 0; v < width; ++v) {
@@ -46,6 +51,9 @@ void gaussianHighPassFilter(
         delete[] H[i];
     }
     delete[] H;
+
+    // Return the filtered output array
+    return G;
 }
 
 bool testGaussianHighPassFilter() {
@@ -57,9 +65,9 @@ bool testGaussianHighPassFilter() {
     double cutoff_frequency = 2.0;
 
     // Simulated frequency-domain data (4x4 matrix)
-    const complex<double>** F_shifted = new const complex<double>*[height];
+    complex<double>** F_shifted = new complex<double>*[height];
     for (int i = 0; i < height; ++i) {
-        F_shifted[i] = new const complex<double>[width];
+        F_shifted[i] = new complex<double>[width];
     }
 
     int value = 1;
@@ -84,14 +92,8 @@ bool testGaussianHighPassFilter() {
         }
     }
 
-    // Output storage for the function result
-    complex<double>** G = new complex<double>*[height];
-    for (int i = 0; i < height; ++i) {
-        G[i] = new complex<double>[width];
-    }
-
-    // Call the Gaussian High-Pass Filter
-    gaussianHighPassFilter(F_shifted, G, width, height, cutoff_frequency);
+    // Call the Gaussian High-Pass Filter and get the output
+    complex<double>** G = gaussianHighPassFilter(F_shifted, width, height, cutoff_frequency);
 
     // Compare the output with the expected result
     bool test_passed = true;
