@@ -59,7 +59,7 @@ cv::Mat startProcessing(cv::Mat& in_img) {
 
     // convert back
     cv::Mat out_img = fromUint8ToMat(height, width, CV_8UC1, spatialImage);
-    cv::imwrite("inverse.jpg", fromUint8ToMat(spatialImage, width, height));
+    cv::imwrite("inverse.jpg", fromUint8ToMat(width, height, spatialImage));
 
     return out_img;
 }
