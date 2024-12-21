@@ -20,19 +20,19 @@ cv::Mat startProcessing(cv::Mat& in_img) {
 
     // ensure image dimensions are in powers of 2
     if (!isPowerOfTwo(width) || !isPowerOfTwo(height)) {
-      cout << "Image size is not in powers of 2." << endl;
-      cout << "Displying back original image..." << endl;
-      return in_img;
+        cout << "Image size is not in powers of 2." << endl;
+        cout << "Displying back original image..." << endl;
+        return in_img;
     }
 
     // cutoff frequency for the Gaussian High-Pass Filter
     double cutoff_frequency = 128;
 
-    // start time 
-    auto start = chrono::high_resolution_clock::now();
-
     // convert image to grayscale 
     uint8_t* grayscaleImage = rgb_to_grayscale(in_img.data, width, height);
+
+    // start time 
+    auto start = chrono::high_resolution_clock::now();
 
     // convert the grayscale image to a 2D complex array
     complex<double>** complexImage = convertToComplex2D(grayscaleImage, width, height);
