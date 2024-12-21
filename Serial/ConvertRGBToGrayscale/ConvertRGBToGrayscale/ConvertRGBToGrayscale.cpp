@@ -2,12 +2,11 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include "convertGrayscale.hpp"
-#include "imageUtil.hpp"
 #include "cv_pipe.h"
 
 using namespace std;
 
-cv::Mat& startProcessing(cv::Mat& out_img, cv::Mat& in_img) {
+cv::Mat& startProcessing(cv::Mat& in_img) {
 
     // get width and height 
     int width = in_img.cols;
@@ -15,12 +14,6 @@ cv::Mat& startProcessing(cv::Mat& out_img, cv::Mat& in_img) {
 
     // convert image to grayscale 
     uint8_t* grayscaleImage = rgb_to_grayscale(in_img.data, width, height);
-
-    // check unsuccess 
-    if (!grayscaleImage) {
-        printf("RGB convert Grayscale unsuccess");
-        return -1;
-    }
 
     // convert back
     cv::Mat out_img(height, width, CV_8UC1, grayscaleImage);
