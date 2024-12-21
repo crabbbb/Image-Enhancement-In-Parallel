@@ -18,7 +18,7 @@ cv::Mat startProcessing(cv::Mat& in_img) {
     int width = in_img.cols;
     int height = in_img.rows;
     // cutoff frequency for the Gaussian High-Pass Filter
-    double cutoff_frequency = 2.0;
+    double cutoff_frequency = 0.5;
 
     // start time 
     auto start = chrono::high_resolution_clock::now();
@@ -45,10 +45,12 @@ cv::Mat startProcessing(cv::Mat& in_img) {
     auto end = chrono::high_resolution_clock::now();
     auto duration = (chrono::duration_cast<chrono::milliseconds>(end - start)).count();
 
+    cout << "Total duration time used for Serial is " << duration << "ms " << endl;
+
     // convert the complex<double> to uint8_t
-    uint8_t* frequencyImage = convertToGrayscale(fftResult);
-    uint8_t* gaussianImage = convertToGrayscale(filteredResult);
-    uint8_t* spatialImage = convertToGrayscale(reconstructedImage);
+    uint8_t* frequencyImage = convertToGrayscale(fftResult, width, height);
+    uint8_t* gaussianImage = convertToGrayscale(filteredResult, width, height);
+    uint8_t* spatialImage = convertToGrayscale(reconstructedImage, width, height);
 
     // save image 
     cv::imwrite("gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
@@ -56,8 +58,8 @@ cv::Mat startProcessing(cv::Mat& in_img) {
     cv::imwrite("gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
     // convert back
-    cv::Mat out_img = fromUint8ToMat(height, width, CV_8UC1, spatialImage);
-    cv::imwrite("inverse.jpg", fromUint8ToMat(spatialImage, width, height));
+    cv::Mat out_img = fromUint8ToMat(spatialImage, width, height);
+    cv::imwrite("inverse.jpg", out_img);
 
     return out_img;
 }

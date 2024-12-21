@@ -1,31 +1,16 @@
 #include <complex>
 #include <iostream>
 #include <iomanip>
+#include <opencv2/opencv.hpp>
 
 using namespace std;
 
-template <typename T>
-T clamp(T value, T min_value, T max_value) {
-    if (value < min_value) return min_value;
-    if (value > max_value) return max_value;
-    return value;
+cv::Mat fromUint8ToMat(uint8_t* grayscaleImage, int width, int height) {
+    cv::Mat out(height, width, CV_8UC1, grayscaleImage);
+    return out;
 }
 
-// Cleanup a 2D array
-void cleanup2DArray(complex<double>**& array, int height) {
-    if (array != nullptr) {
-        for (int i = 0; i < height; ++i) {
-            if (array[i] != nullptr) {
-                delete[] array[i];
-                array[i] = nullptr; // Prevent dangling pointer
-            }
-        }
-        delete[] array;
-        array = nullptr; // Prevent dangling pointer
-    }
-}
-
-// Convert uint8_t* grayscale image to a 2D array of complex numbers
+// convert uint8_t* grayscale image to a 2D array of complex numbers
 complex<double>** convertToComplex2D(const uint8_t* image, int width, int height) {
     complex<double>** complex_image = new complex<double>*[height];
 
@@ -57,6 +42,27 @@ uint8_t* convertToGrayscale(complex<double>** complex_image, int width, int heig
     }
 
     return grayscale_image;
+}
+
+template <typename T>
+T clamp(T value, T min_value, T max_value) {
+    if (value < min_value) return min_value;
+    if (value > max_value) return max_value;
+    return value;
+}
+
+// Cleanup a 2D array
+void cleanup2DArray(complex<double>**& array, int height) {
+    if (array != nullptr) {
+        for (int i = 0; i < height; ++i) {
+            if (array[i] != nullptr) {
+                delete[] array[i];
+                array[i] = nullptr; // Prevent dangling pointer
+            }
+        }
+        delete[] array;
+        array = nullptr; // Prevent dangling pointer
+    }
 }
 
 // testing section
