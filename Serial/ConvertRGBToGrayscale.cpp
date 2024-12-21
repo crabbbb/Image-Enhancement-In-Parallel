@@ -45,10 +45,12 @@ cv::Mat startProcessing(cv::Mat& in_img) {
     auto end = chrono::high_resolution_clock::now();
     auto duration = (chrono::duration_cast<chrono::milliseconds>(end - start)).count();
 
+    cout << "Total duration time used for Serial is " << duration << "ms " << endl;
+
     // convert the complex<double> to uint8_t
-    uint8_t* frequencyImage = convertToGrayscale(fftResult);
-    uint8_t* gaussianImage = convertToGrayscale(filteredResult);
-    uint8_t* spatialImage = convertToGrayscale(reconstructedImage);
+    uint8_t* frequencyImage = convertToGrayscale(fftResult, width, height);
+    uint8_t* gaussianImage = convertToGrayscale(filteredResult, width, height);
+    uint8_t* spatialImage = convertToGrayscale(reconstructedImage, width, height);
 
     // save image 
     cv::imwrite("gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
