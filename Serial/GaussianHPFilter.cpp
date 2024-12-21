@@ -1,7 +1,7 @@
 #include <cmath>
 #include <complex>
 #include <iostream>
-#include "GaussianHPFilter.h"
+#include "GaussianHPFilter.hpp"
 
 using namespace std;
 

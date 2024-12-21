@@ -2,10 +2,10 @@
 //
 
 #include <iostream>
-#include "GaussianHPFilter.h"
-#include "FastFourierTransform.h"
-#include "InverseFastFourierTransform.h"
-#include "Utils.h"
+#include "GaussianHPFilter.hpp"
+#include "FastFourierTransform.hpp"
+#include "InverseFastFourierTransform.hpp"
+#include "Utils.hpp"
 
 using namespace std;
 

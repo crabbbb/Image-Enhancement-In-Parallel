@@ -1,6 +1,6 @@
-#include "InverseFastFourierTransform.h"
-#include "FastFourierTransform.h"
-#include "Utils.h"
+#include "InverseFastFourierTransform.hpp"
+#include "FastFourierTransform.hpp"
+#include "Utils.hpp"
 #include <cmath>
 #include <complex>
 #include <iostream>
