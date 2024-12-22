@@ -27,7 +27,6 @@ Distributed System and Parallel Computing Course Assignment, which required to u
     ```
     #include <opencv2/opencv.hpp>
     #include <iostream>
-    #include "convertGrayscale.hpp"
 
     int main()
     {
