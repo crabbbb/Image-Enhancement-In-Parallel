@@ -99,10 +99,10 @@ void printInverseFastFourierTransformTestResults() {
 
 int main()
 {
-    //testConversionToAndFromComplex();
-    //printGaussianFilterTestResults();
-    //printFastFourierTransformTestResults();
-    //printInverseFastFourierTransformTestResults();
-    //testFFT2DToGaussianFilterToIFFT2D();
+    testConversionToAndFromComplex();
+    printGaussianFilterTestResults();
+    printFastFourierTransformTestResults();
+    printInverseFastFourierTransformTestResults();
+    testFFT2DToGaussianFilterToIFFT2D();
     return 0;
 }
