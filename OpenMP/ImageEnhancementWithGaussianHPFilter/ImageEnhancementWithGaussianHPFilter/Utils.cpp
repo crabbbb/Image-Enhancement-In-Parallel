@@ -1,5 +1,6 @@
 #include <complex>
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <algorithm>
 #include <opencv2/opencv.hpp>
@@ -12,6 +13,27 @@ using namespace std;
 //    if (value > max_value) return max_value;
 //    return value;
 //}
+
+bool storeDataIntoFile(double dList[], string fname) {
+
+    // Open the file in default mode (truncation mode)
+    std::ofstream outFile(fname + ".txt");
+
+    // Check if the file was opened successfully
+    if (!outFile) {
+        cout << "Error: Could not create or open the file " << endl;
+        return false; // Exit with error
+    }
+
+    for (double d : dList) {
+        outFile << d << endl; 
+    }
+
+    // Close the file
+    outFile.close();
+
+    std::cout << "File overwritten successfully: " << std::endl;
+}
 
 cv::Mat fromUint8ToMat(uint8_t* grayscaleImage, int width, int height) {
     cv::Mat out(height, width, CV_8UC1, grayscaleImage);
