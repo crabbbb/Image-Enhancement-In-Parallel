@@ -1,16 +1,10 @@
 #include <complex>
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
 #include <opencv2/opencv.hpp>
 
 using namespace std;
-
-template <typename T>
-T clamp(T value, T min_value, T max_value) {
-    if (value < min_value) return min_value;
-    if (value > max_value) return max_value;
-    return value;
-}
 
 cv::Mat fromUint8ToMat(uint8_t* grayscaleImage, int width, int height) {
     cv::Mat out(height, width, CV_8UC1, grayscaleImage);
@@ -41,7 +35,7 @@ uint8_t* convertToGrayscale(complex<double>** complex_image, int width, int heig
             double real_value = complex_image[i][j].real();
 
             // Clamp the value to the range [0, 255] to fit in uint8_t
-            real_value = clamp(real_value, 0.0, 255.0);
+            real_value = std::clamp(real_value, 0.0, 255.0);
 
             // Store the value as uint8_t in the output array
             grayscale_image[i * width + j] = static_cast<uint8_t>(round(real_value));
