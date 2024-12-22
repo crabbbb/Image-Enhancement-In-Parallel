@@ -64,15 +64,16 @@ complex<double>** FFT2D(complex<double>** image, int width, int height) {
     }
 
     // Step 2: Apply 1D FFT row-wise on the new array
-    #pragma omp parallel for 
+    //#pragma omp parallel for 
     for (int i = 0; i < height; ++i) {
         FFT1D(fft_result[i], width);
     }
 
     // Step 3: Apply 1D FFT column-wise on the new array
-    #pragma omp parallel for
+    //#pragma omp parallel for
+    complex<double>* column = new complex<double>[height];
     for (int j = 0; j < width; j++) {
-        complex<double>* column = new complex<double>[height];
+        
         for (int i = 0; i < height; i++) {
             column[i] = fft_result[i][j];
         }
@@ -83,8 +84,8 @@ complex<double>** FFT2D(complex<double>** image, int width, int height) {
             fft_result[i][j] = column[i];
         }
 
-        delete[] column;
     }
+    delete[] column;
 
     // disable nested 
     omp_set_nested(0);

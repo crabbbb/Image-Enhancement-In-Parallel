@@ -63,15 +63,15 @@ complex<double>** IFFT2D(complex<double>** image, int width, int height) {
     }
 
     // Apply 1D IFFT row-wise
-    #pragma omp parallel for 
+    //#pragma omp parallel for 
     for (int i = 0; i < height; ++i) {
         ifft_result[i] = IFFT1D(ifft_result[i], width);
     }
 
     // Apply 1D IFFT column-wise
-    #pragma omp parallel for
+    //#pragma omp parallel for
+    complex<double>* column = new complex<double>[height];
     for (int j = 0; j < width; ++j) {
-        complex<double>* column = new complex<double>[height];
         for (int i = 0; i < height; ++i) {
             column[i] = ifft_result[i][j];
         }
@@ -81,10 +81,10 @@ complex<double>** IFFT2D(complex<double>** image, int width, int height) {
         for (int i = 0; i < height; ++i) {
             ifft_result[i][j] = column[i];
         }
-
-        delete[] column;
     }
     
+    delete[] column;
+
     // Normalize the entire result
     double normalization_factor = width * height;
     

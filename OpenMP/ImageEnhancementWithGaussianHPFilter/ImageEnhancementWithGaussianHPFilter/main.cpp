@@ -3,7 +3,7 @@
 #include <vector>
 #include <chrono>
 #include "convertGrayscale.hpp"
-#include "cv_pipe.h"
+//#include "cv_pipe.h"
 #include "GaussianHPFilter.hpp"
 #include "FastFourierTransform.hpp"
 #include "InverseFastFourierTransform.hpp"
