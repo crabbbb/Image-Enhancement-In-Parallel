@@ -26,16 +26,16 @@ complex<double>* IFFT1D(complex<double>* x, int size) {
     }
 
     // Recursive IFFT calls
-    #pragma omp task shared(x_even)
+    //#pragma omp task shared(x_even)
     x_even = IFFT1D(x_even, size / 2);
 
-    #pragma omp task shared(x_odd)
+    //#pragma omp task shared(x_odd)
     x_odd = IFFT1D(x_odd, size / 2);
 
-    #pragma omp taskwait
+    //#pragma omp taskwait
 
     // Combine results using twiddle factors
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for (int k = 0; k < size / 2; ++k) {
         complex<double> W_k = exp(complex<double>(0, 2.0 * M_PI * k / size)) * x_odd[k];
         x[k] = x_even[k] + W_k;
@@ -50,8 +50,6 @@ complex<double>* IFFT1D(complex<double>* x, int size) {
 
 // 2D Inverse Fast Fourier Transform
 complex<double>** IFFT2D(complex<double>** image, int width, int height) {
-    // enable nested 
-    omp_set_nested(1);
 
     // Create a new array to store the IFFT result
     complex<double>** ifft_result = new complex<double>*[height];
@@ -63,15 +61,15 @@ complex<double>** IFFT2D(complex<double>** image, int width, int height) {
     }
 
     // Apply 1D IFFT row-wise
-    //#pragma omp parallel for 
+    #pragma omp parallel for num_threads(8)
     for (int i = 0; i < height; ++i) {
         ifft_result[i] = IFFT1D(ifft_result[i], width);
     }
 
     // Apply 1D IFFT column-wise
-    //#pragma omp parallel for
-    complex<double>* column = new complex<double>[height];
+    #pragma omp parallel for num_threads(8)
     for (int j = 0; j < width; ++j) {
+        complex<double>* column = new complex<double>[height];
         for (int i = 0; i < height; ++i) {
             column[i] = ifft_result[i][j];
         }
@@ -81,14 +79,14 @@ complex<double>** IFFT2D(complex<double>** image, int width, int height) {
         for (int i = 0; i < height; ++i) {
             ifft_result[i][j] = column[i];
         }
+
+        delete[] column;
     }
     
-    delete[] column;
-
     // Normalize the entire result
     double normalization_factor = width * height;
     
-    #pragma omp parallel for 
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
             ifft_result[i][j] /= normalization_factor;

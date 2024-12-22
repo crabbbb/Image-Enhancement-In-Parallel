@@ -20,23 +20,16 @@ void FFT1D(complex<double>* x, int size) {
     complex<double>* x_even = new complex<double>[size / 2];
     complex<double>* x_odd = new complex<double>[size / 2];
 
-    #pragma omp parallel for
     for (int i = 0; i < size / 2; ++i) {
         x_even[i] = x[i * 2];
         x_odd[i] = x[i * 2 + 1];
     }
 
-    // Recursive FFT on even and odd parts
-    #pragma omp task shared(x_even)
     FFT1D(x_even, size / 2);
 
-    #pragma omp task shared(x_odd)
     FFT1D(x_odd, size / 2);
 
-    #pragma omp taskwait
-
     // Combine results
-    #pragma omp parallel for
     for (int k = 0; k < size / 2; ++k) {
         complex<double> W_k = exp(complex<double>(0, -2.0 * M_PI * k / size)) * x_odd[k];
         x[k] = x_even[k] + W_k;
@@ -50,9 +43,6 @@ void FFT1D(complex<double>* x, int size) {
 // Perform 2D FFT by applying 1D FFT row-wise and column-wise
 // Returns a new 2D array containing the FFT result.
 complex<double>** FFT2D(complex<double>** image, int width, int height) {
-    // enable nested 
-    omp_set_nested(1);
-
     // Step 1: Create a new array to store the FFT result
     complex<double>** fft_result = new complex<double>*[height];
     for (int i = 0; i < height; ++i) {
@@ -64,16 +54,15 @@ complex<double>** FFT2D(complex<double>** image, int width, int height) {
     }
 
     // Step 2: Apply 1D FFT row-wise on the new array
-    //#pragma omp parallel for 
+    #pragma omp parallel for num_threads(8)
     for (int i = 0; i < height; ++i) {
         FFT1D(fft_result[i], width);
     }
 
     // Step 3: Apply 1D FFT column-wise on the new array
-    //#pragma omp parallel for
-    complex<double>* column = new complex<double>[height];
+    #pragma omp parallel for num_threads(8)
     for (int j = 0; j < width; j++) {
-        
+        complex<double>* column = new complex<double>[height];
         for (int i = 0; i < height; i++) {
             column[i] = fft_result[i][j];
         }
@@ -83,13 +72,8 @@ complex<double>** FFT2D(complex<double>** image, int width, int height) {
         for (int i = 0; i < height; ++i) {
             fft_result[i][j] = column[i];
         }
-
+        delete[] column;
     }
-    delete[] column;
-
-    // disable nested 
-    omp_set_nested(0);
-
     // Step 4: Return the newly created FFT result array
     return fft_result;
 }

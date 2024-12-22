@@ -8,11 +8,12 @@
 #include "FastFourierTransform.hpp"
 #include "InverseFastFourierTransform.hpp"
 #include "Utils.hpp"
+#include <filesystem>
 
 using namespace std;
 
 // all the processing done here 
-cv::Mat startProcessing(cv::Mat& in_img) {
+cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 
     // get width and height 
     int width = in_img.cols;
@@ -41,9 +42,13 @@ cv::Mat startProcessing(cv::Mat& in_img) {
     cout << "Performing 2D FFT..." << endl;
     complex<double>** fftResult = FFT2D(complexImage, width, height);
 
+    auto fft = chrono::high_resolution_clock::now();
+
     // apply Gaussian High-Pass Filter
     cout << "Applying Gaussian High-Pass Filter..." << endl;
     complex<double>** filteredResult = gaussianHighPassFilter(fftResult, width, height, cutoff_frequency);
+
+    auto go = chrono::high_resolution_clock::now();
 
     // perform Inverse FFT
     cout << "Performing Inverse FFT..." << endl;
@@ -61,51 +66,76 @@ cv::Mat startProcessing(cv::Mat& in_img) {
     uint8_t* spatialImage = convertToGrayscale(reconstructedImage, width, height);
 
     // save image 
-    cv::imwrite("gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
-    cv::imwrite("frequency.jpg", fromUint8ToMat(frequencyImage, width, height));
-    cv::imwrite("gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
+    cv::imwrite("../../../resource/result/omp/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
+    cv::imwrite("../../../resource/result/omp/" + imName + "_frequency.jpg", fromUint8ToMat(frequencyImage, width, height));
+    cv::imwrite("../../../resource/result/omp/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
     // convert back
     cv::Mat out_img = fromUint8ToMat(spatialImage, width, height);
-    cv::imwrite("inverse.jpg", out_img);
+    cv::imwrite("../../../resource/result/omp/" + imName + "_inverse.jpg", out_img);
 
     return out_img;
 }
 
 int main(int argc, char* argv[])
 {
-    int c;
-    std::vector<char*> img_filenames;
-    init_cv_pipe_comm(argc, argv, true);
+    string image[] = { "lena.jpeg", "wolf.jpg" };
 
-    reset_getopt();
-    while ((c = getopt(argc, argv, "p:")) != -1) {
-        switch (c) {
-        case 'p':
-            // Do nothing because it should be handled by cv_pipe
-            break;
-        case '?':
-            // Abort when encountering an unknown option
-            return -1;
-        }
+    string basePath = "C:\\Users\\LENOVO\\OneDrive\\Documents\\GitHub\\Image-Enhancement-In-Parallel\\resource\\raw\\";
+
+    for (const string& i : image) {
+        string imName = filesystem::path(i).stem().string();
+
+        string completePath = basePath + i;
+
+        cv::Mat rgbImage = cv::imread(completePath);
+
+        cv::Mat out = startProcessing(rgbImage, imName);
+
+        // convert back
+        cv::Mat resizeImage;
+        cv::resize(out, resizeImage, cv::Size(800, 800));
+        cv::imshow(imName, resizeImage);
+        cv::waitKey(0);
     }
-    // Get all filenames from the non-option arguments
-    for (int index = optind; index < argc; index++)
-        img_filenames.push_back(argv[index]);
-
-    for (auto filename : img_filenames) {
-        std::cout << filename << std::endl;
-        // Load the filename image
-        cv::Mat image = cv::imread(filename);
-        if (image.empty()) {
-            std::cerr << "Unable to load image: " << filename << std::endl;
-            return -1;
-        }
-        // Convert color image to grayscale image
-        cv::Mat result = startProcessing(image);
-        cv_imshow(result);
-    }
-
-    return finalize_cv_pipe_comm();
+    
+    return 0;
 }
+
+//int main(int argc, char* argv[])
+//{
+//    int c;
+//    std::vector<char*> img_filenames;
+//    init_cv_pipe_comm(argc, argv, true);
+//
+//    reset_getopt();
+//    while ((c = getopt(argc, argv, "p:")) != -1) {
+//        switch (c) {
+//        case 'p':
+//            // Do nothing because it should be handled by cv_pipe
+//            break;
+//        case '?':
+//            // Abort when encountering an unknown option
+//            return -1;
+//        }
+//    }
+//    // Get all filenames from the non-option arguments
+//    for (int index = optind; index < argc; index++)
+//        img_filenames.push_back(argv[index]);
+//
+//    for (auto filename : img_filenames) {
+//        std::cout << filename << std::endl;
+//        // Load the filename image
+//        cv::Mat image = cv::imread(filename);
+//        if (image.empty()) {
+//            std::cerr << "Unable to load image: " << filename << std::endl;
+//            return -1;
+//        }
+//        // Convert color image to grayscale image
+//        cv::Mat result = startProcessing(image);
+//        cv_imshow(result);
+//    }
+//
+//    return finalize_cv_pipe_comm();
+//}
 
