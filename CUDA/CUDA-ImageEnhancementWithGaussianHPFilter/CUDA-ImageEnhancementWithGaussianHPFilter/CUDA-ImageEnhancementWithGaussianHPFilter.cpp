@@ -19,7 +19,7 @@ void printGaussianFilterTestResults() {
 }
 
 void printFastFourierTransformTestResults() {
-    bool testResutlts = testFFT2D();
+    bool testResutlts = testFFT2DParallel();
     if (testResutlts) {
         cout << "Fast Fourier Transform working." << endl;
     }
