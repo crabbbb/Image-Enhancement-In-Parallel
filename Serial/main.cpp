@@ -8,11 +8,12 @@
 #include "FastFourierTransform.hpp"
 #include "InverseFastFourierTransform.hpp"
 #include "Utils.hpp"
+#include <filesystem>
 
 using namespace std;
 
 // all the processing done here 
-cv::Mat startProcessing(cv::Mat& in_img) {
+cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 
     // get width and height 
     int width = in_img.cols;
@@ -61,13 +62,13 @@ cv::Mat startProcessing(cv::Mat& in_img) {
     uint8_t* spatialImage = convertToGrayscale(reconstructedImage, width, height);
 
     // save image 
-    cv::imwrite("gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
-    cv::imwrite("frequency.jpg", fromUint8ToMat(frequencyImage, width, height));
-    cv::imwrite("gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
+    cv::imwrite(imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
+    cv::imwrite(imName + "_frequency.jpg", fromUint8ToMat(frequencyImage, width, height));
+    cv::imwrite(imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
     // convert back
     cv::Mat out_img = fromUint8ToMat(spatialImage, width, height);
-    cv::imwrite("inverse.jpg", out_img);
+    cv::imwrite(imName + "_inverse.jpg", out_img);
 
     return out_img;
 }
@@ -102,7 +103,8 @@ int main(int argc, char *argv[])
             return -1;
         }
         // Convert color image to grayscale image
-        cv::Mat result = startProcessing(image);
+        string imName = filesystem::path(filename).stem().string();
+        cv::Mat result = startProcessing(image, imName);
         cv_imshow(result);
     }
 
