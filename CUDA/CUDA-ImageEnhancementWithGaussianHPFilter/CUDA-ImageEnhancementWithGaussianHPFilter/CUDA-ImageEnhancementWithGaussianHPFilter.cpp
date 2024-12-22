@@ -45,5 +45,5 @@ int testCUDA()
 int main()
 {
     //testCUDA();
-    printGaussianFilterTestResults();
+    //printGaussianFilterTestResults();
 }
