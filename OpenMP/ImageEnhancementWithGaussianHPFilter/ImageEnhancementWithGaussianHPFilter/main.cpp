@@ -3,7 +3,7 @@
 #include <vector>
 #include <chrono>
 #include "convertGrayscale.hpp"
-//#include "cv_pipe.h"
+#include "cv_pipe.h"
 #include "GaussianHPFilter.hpp"
 #include "FastFourierTransform.hpp"
 #include "InverseFastFourierTransform.hpp"
@@ -66,76 +66,51 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
     uint8_t* spatialImage = convertToGrayscale(reconstructedImage, width, height);
 
     // save image 
-    cv::imwrite("../../../resource/result/omp/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
-    cv::imwrite("../../../resource/result/omp/" + imName + "_frequency.jpg", fromUint8ToMat(frequencyImage, width, height));
-    cv::imwrite("../../../resource/result/omp/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
+    cv::imwrite(imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
+    cv::imwrite(imName + "_frequency.jpg", fromUint8ToMat(frequencyImage, width, height));
+    cv::imwrite(imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
     // convert back
     cv::Mat out_img = fromUint8ToMat(spatialImage, width, height);
-    cv::imwrite("../../../resource/result/omp/" + imName + "_inverse.jpg", out_img);
+    cv::imwrite(imName + "_inverse.jpg", out_img);
 
     return out_img;
 }
 
 int main(int argc, char* argv[])
 {
-    string image[] = { "lena.jpeg", "wolf.jpg" };
+    int c;
+    std::vector<char*> img_filenames;
+    init_cv_pipe_comm(argc, argv, true);
 
-    string basePath = "C:\\Users\\LENOVO\\OneDrive\\Documents\\GitHub\\Image-Enhancement-In-Parallel\\resource\\raw\\";
-
-    for (const string& i : image) {
-        string imName = filesystem::path(i).stem().string();
-
-        string completePath = basePath + i;
-
-        cv::Mat rgbImage = cv::imread(completePath);
-
-        cv::Mat out = startProcessing(rgbImage, imName);
-
-        // convert back
-        cv::Mat resizeImage;
-        cv::resize(out, resizeImage, cv::Size(800, 800));
-        cv::imshow(imName, resizeImage);
-        cv::waitKey(0);
+    reset_getopt();
+    while ((c = getopt(argc, argv, "p:")) != -1) {
+        switch (c) {
+        case 'p':
+            // Do nothing because it should be handled by cv_pipe
+            break;
+        case '?':
+            // Abort when encountering an unknown option
+            return -1;
+        }
     }
-    
-    return 0;
-}
+    // Get all filenames from the non-option arguments
+    for (int index = optind; index < argc; index++)
+        img_filenames.push_back(argv[index]);
 
-//int main(int argc, char* argv[])
-//{
-//    int c;
-//    std::vector<char*> img_filenames;
-//    init_cv_pipe_comm(argc, argv, true);
-//
-//    reset_getopt();
-//    while ((c = getopt(argc, argv, "p:")) != -1) {
-//        switch (c) {
-//        case 'p':
-//            // Do nothing because it should be handled by cv_pipe
-//            break;
-//        case '?':
-//            // Abort when encountering an unknown option
-//            return -1;
-//        }
-//    }
-//    // Get all filenames from the non-option arguments
-//    for (int index = optind; index < argc; index++)
-//        img_filenames.push_back(argv[index]);
-//
-//    for (auto filename : img_filenames) {
-//        std::cout << filename << std::endl;
-//        // Load the filename image
-//        cv::Mat image = cv::imread(filename);
-//        if (image.empty()) {
-//            std::cerr << "Unable to load image: " << filename << std::endl;
-//            return -1;
-//        }
-//        // Convert color image to grayscale image
-//        cv::Mat result = startProcessing(image);
-//        cv_imshow(result);
-//    }
-//
-//    return finalize_cv_pipe_comm();
-//}
+    for (auto filename : img_filenames) {
+        std::cout << filename << std::endl;
+        // Load the filename image
+        cv::Mat image = cv::imread(filename);
+        if (image.empty()) {
+            std::cerr << "Unable to load image: " << filename << std::endl;
+            return -1;
+        }
+        // Convert color image to grayscale image
+        cv::Mat result = startProcessing(image);
+        cv_imshow(result);
+    }
+
+    return finalize_cv_pipe_comm();
+}
 
