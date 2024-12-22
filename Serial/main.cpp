@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
             return -1;
         }
         // Convert color image to grayscale image
-        string imName = filesystem::path(i).stem().string();
+        string imName = filesystem::path(filename).stem().string();
         cv::Mat result = startProcessing(image, imName);
         cv_imshow(result);
     }
