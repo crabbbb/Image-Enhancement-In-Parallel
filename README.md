@@ -15,12 +15,12 @@ Distributed System and Parallel Computing Course Assignment, which required to u
 # OpenCV Installation Step 
 1. Download OpenCV Window .exe file [[Link]](https://github.com/opencv/opencv/releases/tag/4.10.0)<br/>
     ![alt text](readmeImage/image.png)
-2. Execute .exe extract the opencv folder to C:\opencv
-3. Window open edit the system environment variable > Environment Variable > Advannced > Under System Variable find Path > Double Click > Add a new Path "C:\opencv\build\x64\vc16\bin" > Click OK and close the app
+2. Execute .exe extract the opencv folder to <code><b>C:\ </b></code>
+3. Window open edit the system environment variable > Environment Variable > Advannced > Under System Variable find Path > Double Click > Add a new Path <code>**C:\opencv\build\x64\vc16\bin**</code> > Click OK and close the app
 4. At Visual Studio 2022, Right Click Project > Properties 
-    - C/C++ > General > Additional Include Directories > Enter "C:\opencv\build\include"
-    - Linker > General > Additional Library Directories > Enter "C:\opencv\build\x64\vc16\lib"
-    - Linker > Input > Additional Dependencies > Enter "opencv_world4100d.lib;opencv_world4100.lib;"
+    - C/C++ > General > Additional Include Directories > Enter <code>**C:\opencv\build\include**</code>
+    - Linker > General > Additional Library Directories > Enter <code>**C:\opencv\build\x64\vc16\lib**</code>
+    - Linker > Input > Additional Dependencies > Enter <code>**opencv_world4100d.lib;opencv_world4100.lib;**</code>
         - *d.lib is for debug purpose 
         - .lib is for release use 
 5. Execute the code below, console should be able to prompt the "Hello World!"
@@ -33,7 +33,9 @@ Distributed System and Parallel Computing Course Assignment, which required to u
     {
         std::string image_path = "C:\\path-to-your-resource\\resource\\raw\\lena.jpeg";
         cv::Mat rgb_image = cv::imread(image_path, cv::IMREAD_COLOR);
-        std::cout << "Hello World!\n";
+        cv::imshow("RGB Image", rgb_image);
+        // must put, else will have error 
+        cv::waitKey(0);
     }
     ```
 6. If Debug facing the error below, restart the Visual Studio 2022 <br/>
