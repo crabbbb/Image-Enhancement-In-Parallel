@@ -14,10 +14,7 @@ using namespace std;
 // Perform 1D FFT using the Cooley-Tukey algorithm
 void FFT1D(complex<double>* x, int size) {
     // Base case
-    if (size <= 1) {
-        cout << "Base Hit" << endl;
-        return;
-    }
+    if (size <= 1) return;
 
     // Split the array into even and odd parts
     complex<double>* x_even = new complex<double>[size / 2];
