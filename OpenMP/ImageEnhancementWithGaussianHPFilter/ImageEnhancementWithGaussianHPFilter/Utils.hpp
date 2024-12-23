@@ -4,6 +4,8 @@
 
 using namespace std;
 
+bool storeDataIntoFile(double dList[], int size, string fname);
+
 cv::Mat fromUint8ToMat(uint8_t* grayscaleImage, int width, int height);
 
 // Cleanup a 2D array

@@ -58,6 +58,8 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
     auto end = chrono::high_resolution_clock::now();
     auto duration = (chrono::duration_cast<chrono::milliseconds>(end - start)).count();
 
+
+
     cout << "Total duration time used for OpenMP is " << duration << "ms " << endl;
 
     // convert the complex<double> to uint8_t

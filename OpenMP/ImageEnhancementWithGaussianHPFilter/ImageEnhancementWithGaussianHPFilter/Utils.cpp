@@ -14,7 +14,7 @@ using namespace std;
 //    return value;
 //}
 
-bool storeDataIntoFile(double dList[], string fname) {
+bool storeDataIntoFile(double dList[], int size, string fname) {
 
     // Open the file in default mode (truncation mode)
     std::ofstream outFile(fname + ".txt");
@@ -25,8 +25,8 @@ bool storeDataIntoFile(double dList[], string fname) {
         return false; // Exit with error
     }
 
-    for (double d : dList) {
-        outFile << d << endl; 
+    for (int i = 0; i < size; ++i) {
+        outFile << dList[i] << endl;
     }
 
     // Close the file
