@@ -10,17 +10,19 @@ int bitReverseIndex(int x, int log2N);
 
 void bitReverseReorder(cuDoubleComplex* data, int N);
 
-// CUDA Kernel for Cooley-Tukey FFT
-__global__ void FFT1DKernel(cuDoubleComplex* data, int size, int step);
+__global__ void CooleyTukey1DKernel(cuDoubleComplex* data, int size, int halfSize, int sign);
 
-// Host Function for Parallelized 1D FFT
+__global__ void ScaleKernel(cuDoubleComplex* data, int size, double scale);
+
+void Do1DFFT(cuDoubleComplex* h_input, cuDoubleComplex* h_output, int size, bool forward);
+
 void FFT1DParallel(cuDoubleComplex* h_input, cuDoubleComplex* h_output, int size);
 
-// 2D FFT Implementation
 cuDoubleComplex** FFT2DParallel(const uint8_t* grayscaleImage, int width, int height);
 
-// Test Function for 2D FFT
-bool testFFT2DParallel();
+void IFFT1DParallel(cuDoubleComplex* h_input, cuDoubleComplex* h_output, int size);
 
-cuDoubleComplex* convertToComplex(uint8_t* grayscale, int size);
+cuDoubleComplex** IFFT2DParallel(cuDoubleComplex** freqData, int width, int height);
+
+void testFFTAndIFFT();
 
