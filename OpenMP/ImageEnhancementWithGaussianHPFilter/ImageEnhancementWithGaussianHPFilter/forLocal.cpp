@@ -79,6 +79,8 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 
     cout << "Total duration time used for OpenMP is " << duration << "ms " << endl;
 
+    storeDataIntoFile(duration, "omp");
+
     // save image 
     cv::imwrite("../../../resource/result/omp/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
     cv::imwrite("../../../resource/result/omp/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
@@ -97,21 +99,27 @@ int main(int argc, char* argv[])
 
     string basePath = "C:\\Users\\LENOVO\\OneDrive\\Documents\\GitHub\\Image-Enhancement-In-Parallel\\resource\\raw\\";
 
-    for (const string& i : image) {
-        string imName = filesystem::path(i).stem().string();
+    string current = image[0];
 
-        string completePath = basePath + i;
+    string imName = filesystem::path(current).stem().string();
+    string completePath = basePath + current;
 
-        cv::Mat rgbImage = cv::imread(completePath);
+    cv::Mat rgbImage;
+    cv::Mat out;
 
-        cv::Mat out = startProcessing(rgbImage, imName);
-
-        // convert back
-        cv::Mat resizeImage;
-        cv::resize(out, resizeImage, cv::Size(800, 800));
-        cv::imshow(imName, resizeImage);
-        cv::waitKey(0);
+    for (int i = 0; i < 10; i++) {
+        rgbImage = cv::imread(completePath);
+        out = startProcessing(rgbImage, imName);
     }
+
+    cv::Mat oriResize;
+    cv::resize(rgbImage, oriResize, cv::Size(600, 600));
+    cv::imshow("Original", oriResize);
+
+    cv::Mat resultResize;
+    cv::resize(out, resultResize, cv::Size(600, 600));
+    cv::imshow("Result", resultResize);
+    cv::waitKey(0);
 
     return 0;
 }

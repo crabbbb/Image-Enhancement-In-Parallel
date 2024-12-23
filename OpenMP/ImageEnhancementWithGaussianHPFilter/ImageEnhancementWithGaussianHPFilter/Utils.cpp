@@ -7,32 +7,49 @@
 
 using namespace std;
 
-//template <typename T>
-//T clamp(T value, T min_value, T max_value) {
-//    if (value < min_value) return min_value;
-//    if (value > max_value) return max_value;
-//    return value;
-//}
+bool storeDataIntoFile(double time, string fname) {
 
-bool storeDataIntoFile(double dList[], int size, string fname) {
+    string fileName = fname + ".txt";
 
-    // Open the file in default mode (truncation mode)
-    std::ofstream outFile(fname + ".txt");
+    // read file 
+    ifstream readFile(fileName, ios::in);
 
-    // Check if the file was opened successfully
-    if (!outFile) {
-        cout << "Error: Could not create or open the file " << endl;
-        return false; // Exit with error
+    int line_count = 0;
+    if (readFile.is_open()) {
+        std::string line;
+
+        // read how many line inside 
+        while (getline(readFile, line)) {
+            line_count++;
+        }
+
+        readFile.close();
+
+        if (line_count < 10) {
+            // write data into file with append 
+            ofstream appendFile(fileName, ios::app);
+
+            appendFile << time << endl;
+            appendFile.close();
+
+            return true;
+        }
     }
 
-    for (int i = 0; i < size; ++i) {
-        outFile << dList[i] << endl;
+    // if bigger than 10 
+    // overwrite the file 
+    ofstream writeFile(fileName);
+
+    // check file can be open or not 
+    if (writeFile.is_open()) {
+
+        writeFile << time << endl;
+        writeFile.close();
+
+        return true;
     }
 
-    // Close the file
-    outFile.close();
-
-    std::cout << "File overwritten successfully: " << std::endl;
+    return false;
 }
 
 cv::Mat fromUint8ToMat(uint8_t* grayscaleImage, int width, int height) {

@@ -4,7 +4,7 @@
 
 using namespace std;
 
-bool storeDataIntoFile(double dList[], int size, string fname);
+bool storeDataIntoFile(double time, string fname);
 
 cv::Mat fromUint8ToMat(uint8_t* grayscaleImage, int width, int height);
 
