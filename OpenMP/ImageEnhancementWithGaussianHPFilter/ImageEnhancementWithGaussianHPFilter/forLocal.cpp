@@ -6,7 +6,6 @@
 //#include "cv_pipe.h"
 #include "GaussianHPFilter.hpp"
 #include "FastFourierTransform.hpp"
-#include "InverseFastFourierTransform.hpp"
 #include "Utils.hpp"
 #include <filesystem>
 
@@ -36,45 +35,60 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
     auto start = chrono::high_resolution_clock::now();
 
     // convert the grayscale image to a 2D complex array
-    complex<double>** complexImage = convertToComplex2D(grayscaleImage, width, height);
+    complex<double>** complex_image = convertToComplex2D(grayscaleImage, width, height);
 
-    // perform 2D FFT
+    // Perform forward 2D FFT in-place
     cout << "Performing 2D FFT..." << endl;
-    complex<double>** fftResult = FFT2D(complexImage, width, height);
+    
+    FFT2D_inplace(complex_image, width, height, +1);
 
-    auto fft = chrono::high_resolution_clock::now();
+    // convert the fft complex to uint8_t with stop the timer 
+    auto fftConvertStart = chrono::high_resolution_clock::now();
+
+    uint8_t* fftImage = convertToGrayscale(complex_image, width, height);
+
+    auto fftConvertEnd = chrono::high_resolution_clock::now();
 
     // apply Gaussian High-Pass Filter
     cout << "Applying Gaussian High-Pass Filter..." << endl;
-    complex<double>** filteredResult = gaussianHighPassFilter(fftResult, width, height, cutoff_frequency);
+    complex<double>** filteredResult = gaussianHighPassFilter(complex_image, width, height, cutoff_frequency);
 
-    auto go = chrono::high_resolution_clock::now();
+    // convert the gaussian complex to uint8_t with stop the timer 
+    auto gaussianConvertStart = chrono::high_resolution_clock::now();
+
+    uint8_t* gaussianImage = convertToGrayscale(filteredResult, width, height);
+
+    auto gaussianConvertEnd = chrono::high_resolution_clock::now();
 
     // perform Inverse FFT
     cout << "Performing Inverse FFT..." << endl;
-    complex<double>** reconstructedImage = IFFT2D(filteredResult, width, height);
+    // Optionally, perform inverse 2D FFT (just pass sign = -1)
+    FFT2D_inplace(filteredResult, width, height, -1);
 
     // end time 
     auto end = chrono::high_resolution_clock::now();
-    auto duration = (chrono::duration_cast<chrono::milliseconds>(end - start)).count();
 
+    // convert the ifft result back to uint8_t 
+    uint8_t* ifftImage = convertToGrayscale(filteredResult, width, height);
 
+    // calculate the different between fft and gaussian start end 
+    auto fftDifferent = (chrono::duration_cast<chrono::milliseconds>(fftConvertEnd - fftConvertEnd)).count();
+    auto gaussianDifferent = (chrono::duration_cast<chrono::milliseconds>(gaussianConvertEnd - gaussianConvertStart)).count();
+
+    auto duration = (chrono::duration_cast<chrono::milliseconds>(end - start)).count() - fftDifferent - gaussianDifferent;
 
     cout << "Total duration time used for OpenMP is " << duration << "ms " << endl;
 
-    // convert the complex<double> to uint8_t
-    uint8_t* frequencyImage = convertToGrayscale(fftResult, width, height);
-    uint8_t* gaussianImage = convertToGrayscale(filteredResult, width, height);
-    uint8_t* spatialImage = convertToGrayscale(reconstructedImage, width, height);
+    storeDataIntoFile(duration, "omp");
 
     // save image 
     cv::imwrite("../../../resource/result/omp/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
-    cv::imwrite("../../../resource/result/omp/" + imName + "_frequency.jpg", fromUint8ToMat(frequencyImage, width, height));
+    cv::imwrite("../../../resource/result/omp/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
     cv::imwrite("../../../resource/result/omp/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
     // convert back
-    cv::Mat out_img = fromUint8ToMat(spatialImage, width, height);
-    cv::imwrite("../../../resource/result/omp/" + imName + "_inverse.jpg", out_img);
+    cv::Mat out_img = fromUint8ToMat(ifftImage, width, height);
+    cv::imwrite("../../../resource/result/omp/" + imName + "_ifft.jpg", out_img);
 
     return out_img;
 }
@@ -85,21 +99,27 @@ int main(int argc, char* argv[])
 
     string basePath = "C:\\Users\\LENOVO\\OneDrive\\Documents\\GitHub\\Image-Enhancement-In-Parallel\\resource\\raw\\";
 
-    for (const string& i : image) {
-        string imName = filesystem::path(i).stem().string();
+    string current = image[0];
 
-        string completePath = basePath + i;
+    string imName = filesystem::path(current).stem().string();
+    string completePath = basePath + current;
 
-        cv::Mat rgbImage = cv::imread(completePath);
+    cv::Mat rgbImage;
+    cv::Mat out;
 
-        cv::Mat out = startProcessing(rgbImage, imName);
-
-        // convert back
-        cv::Mat resizeImage;
-        cv::resize(out, resizeImage, cv::Size(800, 800));
-        cv::imshow(imName, resizeImage);
-        cv::waitKey(0);
+    for (int i = 0; i < 10; i++) {
+        rgbImage = cv::imread(completePath);
+        out = startProcessing(rgbImage, imName);
     }
+
+    cv::Mat oriResize;
+    cv::resize(rgbImage, oriResize, cv::Size(600, 600));
+    cv::imshow("Original", oriResize);
+
+    cv::Mat resultResize;
+    cv::resize(out, resultResize, cv::Size(600, 600));
+    cv::imshow("Result", resultResize);
+    cv::waitKey(0);
 
     return 0;
 }
