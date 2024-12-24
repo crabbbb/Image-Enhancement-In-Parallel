@@ -44,7 +44,7 @@
     <ClCompile Include="InverseFastFourierTransform.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Serial-ImageEnhancementWithGaussianHPFilter.cpp">
+    <ClCompile Include="test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Utils.cpp">
