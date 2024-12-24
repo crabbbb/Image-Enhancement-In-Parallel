@@ -33,9 +33,6 @@
 
 # other 
 .vs
-*.sln
-*.vcxproj
-*.filters
 *.user
 
 # deubg related
