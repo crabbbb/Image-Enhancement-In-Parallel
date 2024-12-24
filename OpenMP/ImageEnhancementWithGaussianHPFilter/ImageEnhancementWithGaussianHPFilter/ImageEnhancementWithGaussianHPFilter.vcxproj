@@ -135,9 +135,9 @@
   <ItemGroup>
     <ClCompile Include="convertGrayscale.cpp" />
     <ClCompile Include="FastFourierTransform.cpp" />
-    <ClCompile Include="forLocal.cpp" />
-    <ClCompile Include="GaussianHPFilter.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="GaussianHPFilter.cpp" />
+    <ClCompile Include="backup_pipeline.cpp" />
     <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>

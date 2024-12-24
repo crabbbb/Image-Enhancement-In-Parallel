@@ -7,12 +7,12 @@
 
 using namespace std;
 
-bool storeDataIntoFile(double time, string fname) {
+bool storeDataIntoFile(double time, string fname, string imName) {
 
-    string fileName = fname + ".txt";
+    string filePath = "resource/timetaken/" + fname + "_" + imName + ".txt";
 
     // read file 
-    ifstream readFile(fileName, ios::in);
+    ifstream readFile(filePath, ios::in);
 
     int line_count = 0;
     if (readFile.is_open()) {
@@ -27,7 +27,7 @@ bool storeDataIntoFile(double time, string fname) {
 
         if (line_count < 10) {
             // write data into file with append 
-            ofstream appendFile(fileName, ios::app);
+            ofstream appendFile(filePath, ios::app);
 
             appendFile << time << endl;
             appendFile.close();
@@ -38,7 +38,7 @@ bool storeDataIntoFile(double time, string fname) {
 
     // if bigger than 10 
     // overwrite the file 
-    ofstream writeFile(fileName);
+    ofstream writeFile(filePath);
 
     // check file can be open or not 
     if (writeFile.is_open()) {
