@@ -1,6 +1,11 @@
 {
     "files.associations": {
         "complex": "cpp",
-        "xiosbase": "cpp"
+        "xiosbase": "cpp",
+        "iomanip": "cpp",
+        "vector": "cpp",
+        "ostream": "cpp",
+        "xstring": "cpp",
+        "filesystem": "cpp"
     }
 }
