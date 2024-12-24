@@ -31,7 +31,7 @@
     <ClCompile Include="GaussianHPFilter.cpp" />
     <ClCompile Include="InverseFastFourierTransform.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Serial-ImageEnhancementWithGaussianHPFilter.cpp" />
+    <ClCompile Include="test.cpp" />
     <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
