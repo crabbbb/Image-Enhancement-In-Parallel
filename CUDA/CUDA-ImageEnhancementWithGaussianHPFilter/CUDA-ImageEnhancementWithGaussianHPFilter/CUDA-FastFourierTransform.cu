@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cmath>
 #include "device_launch_parameters.h"
+#include "CUDA-Utils.hpp"
 
 #define M_PI 3.14159265358979323846
 
@@ -148,40 +149,45 @@ void FFT1DParallel(cuDoubleComplex* h_input, cuDoubleComplex* h_output, int size
 // -------------------------------------------------------
 // Forward 2D FFT Implementation
 // -------------------------------------------------------
-cuDoubleComplex** FFT2DParallel(const uint8_t* grayscaleImage, int width, int height)
+// -------------------------------------------------------
+// Forward 2D FFT Implementation (receives cuDoubleComplex**)
+// -------------------------------------------------------
+cuDoubleComplex** FFT2DParallel(cuDoubleComplex** inputImage, int width, int height)
 {
+    // Allocate container for the final 2D FFT result
     cuDoubleComplex** fft_result = new cuDoubleComplex * [height];
     for (int i = 0; i < height; ++i) {
         fft_result[i] = new cuDoubleComplex[width];
     }
 
-    // Row-wise transform
+    // 1) Row-wise transform
     for (int i = 0; i < height; ++i) {
-        // Convert row i to complex
+        // Copy row i from inputImage to a temporary buffer
         cuDoubleComplex* row_data = new cuDoubleComplex[width];
         for (int c = 0; c < width; ++c) {
-            row_data[c] = make_cuDoubleComplex((double)grayscaleImage[i * width + c], 0.0);
+            row_data[c] = inputImage[i][c];
         }
 
-        // Forward 1D FFT on that row
+        // Forward 1D FFT on this row
         FFT1DParallel(row_data, fft_result[i], width);
 
         delete[] row_data;
     }
 
-    // Column-wise transform
+    // 2) Column-wise transform
     cuDoubleComplex* colData = new cuDoubleComplex[height];
     cuDoubleComplex* colFFT = new cuDoubleComplex[height];
 
     for (int j = 0; j < width; ++j) {
-        // Gather j-th column
+        // Gather the j-th column from fft_result
         for (int i = 0; i < height; ++i) {
             colData[i] = fft_result[i][j];
         }
-        // Forward 1D FFT on that column
+
+        // Forward 1D FFT on this column
         FFT1DParallel(colData, colFFT, height);
 
-        // Place back into fft_result
+        // Scatter results back into fft_result
         for (int i = 0; i < height; ++i) {
             fft_result[i][j] = colFFT[i];
         }
@@ -277,8 +283,10 @@ void testFFTAndIFFT() {
         std::cout << "\n";
     }
 
+    cuDoubleComplex** complex_image = convertToCuComplex2D(image, width, height);
+
     // 1) Forward 2D FFT
-    cuDoubleComplex** fft_result = FFT2DParallel(image, width, height);
+    cuDoubleComplex** fft_result = FFT2DParallel(complex_image, width, height);
 
     std::cout << "\n2D FFT Output (Complex Values):\n";
     for (int i = 0; i < height; ++i) {

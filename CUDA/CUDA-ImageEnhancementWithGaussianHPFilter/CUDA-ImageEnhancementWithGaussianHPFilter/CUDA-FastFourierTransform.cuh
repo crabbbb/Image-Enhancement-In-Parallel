@@ -18,7 +18,7 @@ void Do1DFFT(cuDoubleComplex* h_input, cuDoubleComplex* h_output, int size, bool
 
 void FFT1DParallel(cuDoubleComplex* h_input, cuDoubleComplex* h_output, int size);
 
-cuDoubleComplex** FFT2DParallel(const uint8_t* grayscaleImage, int width, int height);
+cuDoubleComplex** FFT2DParallel(cuDoubleComplex** inputImage, int width, int height);
 
 void IFFT1DParallel(cuDoubleComplex* h_input, cuDoubleComplex* h_output, int size);
 
