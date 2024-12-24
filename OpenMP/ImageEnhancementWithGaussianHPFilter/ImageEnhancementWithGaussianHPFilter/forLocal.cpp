@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
 {
     string image[] = { "lena.jpeg", "wolf.jpg" };
 
-    string basePath = "C:\\Users\\LENOVO\\OneDrive\\Documents\\GitHub\\Image-Enhancement-In-Parallel\\resource\\raw\\";
+    string basePath = "../../../resource/raw/";
 
     string current = image[0];
 
