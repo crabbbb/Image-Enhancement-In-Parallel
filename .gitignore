@@ -43,3 +43,7 @@ resource/raw/lena-original.jpeg
 
 # zip files
 *.zip
+
+# ipykernel checkpoints
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
