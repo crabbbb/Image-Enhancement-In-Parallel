@@ -1,0 +1,6 @@
+ipykernel
+jupyter
+jupyterlab
+nbconvert
+nbformat
+matplotlib
