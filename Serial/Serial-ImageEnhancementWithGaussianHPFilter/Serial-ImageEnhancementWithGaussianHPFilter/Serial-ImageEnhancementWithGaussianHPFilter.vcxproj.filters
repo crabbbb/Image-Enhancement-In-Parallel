@@ -15,33 +15,39 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\FastFourierTransform.hpp">
+    <ClInclude Include="convertGrayscale.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\GaussianHPFilter.hpp">
+    <ClInclude Include="FastFourierTransform.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\InverseFastFourierTransform.hpp">
+    <ClInclude Include="GaussianHPFilter.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Utils.hpp">
+    <ClInclude Include="InverseFastFourierTransform.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\FastFourierTransform.cpp">
+    <ClCompile Include="convertGrayscale.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\GaussianHPFilter.cpp">
+    <ClCompile Include="FastFourierTransform.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\InverseFastFourierTransform.cpp">
+    <ClCompile Include="GaussianHPFilter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Utils.cpp">
+    <ClCompile Include="InverseFastFourierTransform.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Serial-ImageEnhancementWithGaussianHPFilter.cpp">
+    <ClCompile Include="Serial-ImageEnhancementWithGaussianHPFilter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
