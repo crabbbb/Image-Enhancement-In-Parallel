@@ -92,28 +92,64 @@ complex<double>** IFFT2D(complex<double>** image, int width, int height) {
 bool testIFFT2D() {
     // Example grayscale image represented as uint8_t*
     const int width = 4;
-    const int height = 4;
+    const int height = 5;
     uint8_t image[width * height] = {
         1, 2, 3, 4,
         5, 6, 7, 8,
         9, 10, 11, 12,
-        13, 14, 15, 16
+        13, 14, 15, 16,
+        17, 18, 19, 20,
     };
+
+   
 
     // Convert the grayscale image to a 2D array of complex numbers
     complex<double>** complex_image = convertUint8ToComplex2D(image, width, height);
 
+    // display original image
+    cout << "original image Result:" << endl;
+    for (int i = 0; i < height; ++i) {
+        for (int j = 0; j < width; ++j) {
+            cout << complex_image[i][j].real() << " "; // Output only the real part
+        }
+        cout << endl;
+    }
+
+    // zero pad image
+    int newWidth, newHeight;
+    complex<double>** padded_complex_image = zeroPad2D(complex_image, width, height, newWidth, newHeight);
+
+    // display zero padded image
+    cout << "zero padded image Result:" << endl;
+    for (int i = 0; i < newHeight; ++i) {
+        for (int j = 0; j < newWidth; ++j) {
+            cout << padded_complex_image[i][j].real() << " "; // Output only the real part
+        }
+        cout << endl;
+    }
+
     // Perform 2D FFT
-    complex<double>** fft_result = FFT2D(complex_image, width, height);
+    complex<double>** fft_result = FFT2D(padded_complex_image, newWidth, newHeight);
 
     // Perform 2D IFFT
-    complex<double>** ifft_result = IFFT2D(fft_result, width, height);
+    complex<double>** ifft_result = IFFT2D(fft_result, newWidth, newHeight);
+
+    // display zero padded image
+    cout << "final result after ifft before padding removed:" << endl;
+    for (int i = 0; i < newHeight; ++i) {
+        for (int j = 0; j < newWidth; ++j) {
+            cout << ifft_result[i][j].real() << " "; // Output only the real part
+        }
+        cout << endl;
+    }
+
+    complex<double>** ifft_result_with_padding_removed = unzeroPad2D(ifft_result, newWidth, newHeight, width, height);
 
     // Output IFFT result (real parts of the reconstructed image)
     cout << "IFFT2D (Reconstructed Image) Result:" << endl;
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
-            cout << ifft_result[i][j].real() << " "; // Output only the real part
+            cout << ifft_result_with_padding_removed[i][j].real() << " "; // Output only the real part
         }
         cout << endl;
     }
