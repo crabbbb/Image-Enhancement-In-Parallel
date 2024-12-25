@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="backup_pipeline.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FastFourierTransform.cpp">
@@ -30,7 +30,7 @@
     <ClCompile Include="convertGrayscale.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="forLocal.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

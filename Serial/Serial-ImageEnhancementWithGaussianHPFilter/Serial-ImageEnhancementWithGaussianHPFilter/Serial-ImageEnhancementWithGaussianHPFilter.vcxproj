@@ -26,6 +26,7 @@
     <ClInclude Include="Utils.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="backup_pipeline.cpp" />
     <ClCompile Include="convertGrayscale.cpp" />
     <ClCompile Include="FastFourierTransform.cpp" />
     <ClCompile Include="GaussianHPFilter.cpp" />
