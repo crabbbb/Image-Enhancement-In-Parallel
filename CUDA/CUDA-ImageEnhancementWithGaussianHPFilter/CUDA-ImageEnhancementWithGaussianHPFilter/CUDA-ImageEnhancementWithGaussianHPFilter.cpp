@@ -3,10 +3,86 @@
 
 #include <iostream>
 #include <cuda_runtime.h>
+#include <cuComplex.h>
 #include "CUDA-GaussianHPFIlter.cuh"
 #include "CUDA-FastFourierTransform.cuh"
+#include "CUDA-Utils.hpp"
 
 using namespace std;
+
+void testFFT2DToGaussianFilterToIFFT2D() {
+    // Image dimensions
+    const int width = 4;
+    const int height = 4;
+
+    // Simulated grayscale image (4x4)
+    uint8_t image[width * height] = {
+        1, 2, 3, 4,
+        5, 6, 7, 8,
+        9, 10, 11, 12,
+        13, 14, 15, 16
+    };
+
+    // Output initial image
+    cout << "Initial Greyscale Image:" << endl;
+    for (int i = 0; i < height; ++i) {
+        for (int j = 0; j < width; ++j) {
+            cout << static_cast<int>(image[i * width + j]) << " ";
+        }
+        cout << endl;
+    }
+
+    // Cutoff frequency for the Gaussian High-Pass Filter
+    double cutoff_frequency = 2.0;
+
+    // Convert the grayscale image to a 2D complex array
+    cuDoubleComplex** complex_image = convertToCuComplex2D(image, width, height);
+
+    // Perform 2D FFT
+    cout << "Performing 2D FFT..." << endl;
+    cuDoubleComplex** fft_result = FFT2DParallel(complex_image, width, height);
+
+    // Apply Gaussian High-Pass Filter
+    cout << "Applying Gaussian High-Pass Filter..." << endl;
+    cuDoubleComplex** filtered_result = gaussianHighPassFilterCUDA(fft_result, width, height, cutoff_frequency);
+
+    // Perform Inverse FFT
+    cout << "Performing Inverse FFT..." << endl;
+    cuDoubleComplex** reconstructed_image = IFFT2DParallel(filtered_result, width, height);
+
+    // Output reconstructed results
+    cout << "Reconstructed Image:" << endl;
+    for (int i = 0; i < height; ++i) {
+        for (int j = 0; j < width; ++j) {
+            cout << reconstructed_image[i][j].x << " ";
+        }
+        cout << endl;
+    }
+
+    // Cleanup dynamically allocated arrays
+    for (int i = 0; i < height; ++i) {
+        delete[] complex_image[i];
+        delete[] fft_result[i];
+        delete[] filtered_result[i];
+        delete[] reconstructed_image[i];
+    }
+    delete[] complex_image;
+    delete[] fft_result;
+    delete[] filtered_result;
+    delete[] reconstructed_image;
+
+    cout << "Test completed successfully!" << endl;
+}
+
+void printTestGrayscaleCuComplex2DConversion() {
+    bool testResults = testGrayscaleComplexConversion();
+    if (testResults) {
+        cout << "greyscale image conversion to and from cuComplex2D working." << endl;
+    }
+    else {
+        cout << "greyscale image conversion to and from cuComplex2D not working." << endl;
+    }
+}
 
 void printGaussianFilterTestResults() {
     bool testResutlts = testGaussianHighPassFilterCUDA();
@@ -19,13 +95,14 @@ void printGaussianFilterTestResults() {
 }
 
 void printFastFourierTransformTestResults() {
-    bool testResutlts = testFFT2DParallel();
-    if (testResutlts) {
+    /*bool testResults = testFFTAndIFFT();
+    if (testResults) {
         cout << "Fast Fourier Transform working." << endl;
     }
     else {
         cout << "Fast Fourier Transform failed." << endl;
-    }
+    }*/
+    testFFTAndIFFT();
 }
 
 int testCUDA()
@@ -96,7 +173,8 @@ int main()
     //testCUDA();
     //checkGPUInformation();
     //printGaussianFilterTestResults();
-    printFastFourierTransformTestResults();
-
+    //printFastFourierTransformTestResults();
+    //printTestGrayscaleCuComplex2DConversion();
+    testFFT2DToGaussianFilterToIFFT2D();
     //system("pause");
 }

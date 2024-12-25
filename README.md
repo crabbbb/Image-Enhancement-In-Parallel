@@ -39,3 +39,84 @@ Distributed System and Parallel Computing Course Assignment, which required to u
     ```
 6. If Debug facing the error below, restart the Visual Studio 2022 <br/>
     ![alt text](readmeImage/image-1.png)
+
+# Project Setup and Usage Guide
+
+This part provides step-by-step instructions for setting up a Python environment, installing the required dependencies, and running the project's main script.
+
+## 1. Create and Activate a Python Environment
+
+You can choose to use either a virtual environment (`venv`) or Conda.
+
+### Option A: Virtualenv / venv
+
+1. Create a new environment with Python 3.12.8:
+   ```bash
+   python -m venv myenv
+   ```
+
+2. Activate the environment:
+   - On Unix/macOS:
+     ```bash
+     source myenv/bin/activate
+     ```
+   - On Windows:
+     ```cmd
+     myenv\Scripts\activate
+     ```
+
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### Option B: Conda
+
+1. Create a new environment with Python 3.12.8:
+   ```bash
+   conda create --name myenv python=3.12.8
+   ```
+
+2. Activate the environment:
+   ```bash
+   conda activate myenv
+   ```
+
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+## 2. Navigate to the Project Directory
+
+Change into the project directory:
+```bash
+cd path/to/project
+```
+
+## 3. Run the Script
+
+Once the environment is activated and dependencies are installed, run the script:
+```bash
+python run_file_and_notebook.py
+```
+
+## 4. Deactivating the Environment (Optional)
+
+- **venv**:
+  ```bash
+  deactivate
+  ```
+
+- **Conda**:
+  ```bash
+  conda deactivate
+  ```
+
+---
+
+## Troubleshooting
+
+- Ensure that you are using **Python 3.12.8**.
+- Double-check that the `requirements.txt` file is in the project directory before installing dependencies.
+- If you encounter permission issues on Unix-based systems, you may need to adjust file permissions (e.g., `chmod +x`) or use `sudo` cautiously (though it is not recommended for Python environments).
