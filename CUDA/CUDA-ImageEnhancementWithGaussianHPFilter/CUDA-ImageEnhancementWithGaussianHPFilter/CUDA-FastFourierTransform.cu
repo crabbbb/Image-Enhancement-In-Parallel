@@ -283,7 +283,7 @@ void testFFTAndIFFT() {
         std::cout << "\n";
     }
 
-    cuDoubleComplex** complex_image = convertToCuComplex2D(image, width, height);
+    cuDoubleComplex** complex_image = convertUint8ToCuComplex2D(image, width, height);
 
     // 1) Forward 2D FFT
     cuDoubleComplex** fft_result = FFT2DParallel(complex_image, width, height);

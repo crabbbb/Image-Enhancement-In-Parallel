@@ -4,7 +4,7 @@
 #include <cuda_runtime.h>
 #include <cuComplex.h>
 
-uint8_t* convertToGrayscaleFromCuComplex2D(cuDoubleComplex** complexImage, int width, int height)
+uint8_t* convertCuComplex2DToUint8(cuDoubleComplex** complexImage, int width, int height)
 {
     // Allocate a 1D grayscale array of size 'width * height'
     uint8_t* grayscale = new uint8_t[width * height];
@@ -30,7 +30,7 @@ uint8_t* convertToGrayscaleFromCuComplex2D(cuDoubleComplex** complexImage, int w
 // Converts a 1D grayscale image of size 'width * height' into 
 // a 2D array [height][width] of cuDoubleComplex.
 // The real part is the grayscale value, and the imaginary part is 0.
-cuDoubleComplex** convertToCuComplex2D(const uint8_t* grayscale, int width, int height)
+cuDoubleComplex** convertUint8ToCuComplex2D(const uint8_t* grayscale, int width, int height)
 {
     // Allocate 'height' pointers, each pointing to an array of 'width'
     cuDoubleComplex** complex2D = new cuDoubleComplex * [height];
@@ -69,10 +69,10 @@ bool testGrayscaleComplexConversion()
     }
 
     // 1) Convert from grayscale -> 2D complex
-    cuDoubleComplex** complex2D = convertToCuComplex2D(originalGray, width, height);
+    cuDoubleComplex** complex2D = convertUint8ToCuComplex2D(originalGray, width, height);
 
     // 2) Convert from 2D complex -> grayscale
-    uint8_t* reconstructedGray = convertToGrayscaleFromCuComplex2D(complex2D, width, height);
+    uint8_t* reconstructedGray = convertCuComplex2DToUint8(complex2D, width, height);
 
     // 3) Compare reconstructedGray to originalGray
     bool match = true;

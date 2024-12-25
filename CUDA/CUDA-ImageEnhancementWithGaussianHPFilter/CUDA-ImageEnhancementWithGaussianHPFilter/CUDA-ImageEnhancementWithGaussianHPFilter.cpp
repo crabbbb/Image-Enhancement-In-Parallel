@@ -36,7 +36,7 @@ void testFFT2DToGaussianFilterToIFFT2D() {
     double cutoff_frequency = 2.0;
 
     // Convert the grayscale image to a 2D complex array
-    cuDoubleComplex** complex_image = convertToCuComplex2D(image, width, height);
+    cuDoubleComplex** complex_image = convertUint8ToCuComplex2D(image, width, height);
 
     // Perform 2D FFT
     cout << "Performing 2D FFT..." << endl;
