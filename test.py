@@ -1,11 +1,18 @@
 import subprocess
 import os
+import pandas as pd
+import matplotlib.pyplot as plt
 
 SERIALEXE = "serial.exe"
 OMPEXE = "omp.exe"
 CUDAEXE = "cuda.exe"
 
 EXE_LOCATION = r"exe/"
+
+TXT_LOCATION = r"resource/timetaken/"
+
+# number of Loops 
+N = 10
 
 def executeExe(exeLocation) : 
     runCmd = [f"{exeLocation}"]
@@ -19,16 +26,16 @@ def executeExe(exeLocation) :
             check=True
         )
 
-        print("Program finished successfully")
+        print("Platform finished successfully")
 
         if result.stdout:
-            print("Program output : ", result.stdout)
+            print("Platform output : ", result.stdout)
         if result.stderr:
-            print("Program error/warning output : ", result.stderr)
+            print("Platform error/warning output : ", result.stderr)
         
     except subprocess.CalledProcessError as e:
-        print("Program failed with return code : ", e.returncode)
-        print("Program error output : ", e.stderr)
+        print("platform failed with return code : ", e.returncode)
+        print("platform error output : ", e.stderr)
 
 def runOMP():
     # opencv path 
@@ -100,5 +107,40 @@ def runOMP():
     # run the exe
     executeExe(f"{EXE_LOCATION}{OMPEXE}")
 
+def readByLine(filePath) :
+    with open(filePath, 'r') as file:
+        return [line.strip() for line in file]
+
+def readAllTxtFile() :
+    # list of platform name and image Name
+    # platform = ["serial", "omp", "cuda"]
+    platform = ["omp"]
+    imName = ["lena", "wolf"]
+
+    # dataframe 0,1,2,...,10, imageName, platform (col)
+    columns = []
+    
+    for i in range(1, 11) :
+        columns.append(i)
+
+    columns.append("imageName")
+    columns.append("platform")
+
+    # row serial, omp, cuda 
+    df = pd.DataFrame(columns=columns)
+
+    # read data from txt file 
+    i = 0
+    for p in platform :
+        for im in imName :
+            # get txt fileName
+            filePath = f"{TXT_LOCATION}{p}_{im}.txt"
+
+            # read all the data add into dataframe 
+            df.loc[i] = readByLine(filePath) + [im, p]
+            i += 1
+    
+    return df
+
 if __name__ == "__main__":
-    runOMP()
+    df = readAllTxtFile()
