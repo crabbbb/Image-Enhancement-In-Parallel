@@ -11,7 +11,7 @@
 
 using namespace std;
 
-const int N = 1;
+const int N = 10;
 const double CUTOFF_FREQUENCY = 100;
 const double ALPHA = 1.0;
 
@@ -100,8 +100,8 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 
 int main(int argc, char* argv[])
 {
-    /*string image[] = { "lena.jpeg", "wolf.jpg" };*/
-    string image[] = { "doggo.jpg" };
+    string image[] = { "lena.jpeg", "wolf.jpg" };
+    //string image[] = { "wolf.jpg" };
 
     //string basePath = "resource/raw/";
     string basePath = "../../../resource/raw/";
