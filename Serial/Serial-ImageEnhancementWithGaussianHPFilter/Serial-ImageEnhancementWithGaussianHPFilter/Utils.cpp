@@ -1,10 +1,57 @@
 #include <complex>
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <algorithm>
 #include <opencv2/opencv.hpp>
 
 using namespace std;
+
+bool storeDataIntoFile(double time, string fname, string imName) {
+
+    string filePath = "resource/timetaken/" + fname + "_" + imName + ".txt";
+    //string filePath = "../../../resource/timetaken/" + fname + "_" + imName + ".txt";
+
+    // read file 
+    ifstream readFile(filePath, ios::in);
+
+    int line_count = 0;
+    if (readFile.is_open()) {
+        std::string line;
+
+        // read how many line inside 
+        while (getline(readFile, line)) {
+            line_count++;
+        }
+
+        readFile.close();
+
+        if (line_count < 10) {
+            // write data into file with append 
+            ofstream appendFile(filePath, ios::app);
+
+            appendFile << time << endl;
+            appendFile.close();
+
+            return true;
+        }
+    }
+
+    // if bigger than 10 
+    // overwrite the file 
+    ofstream writeFile(filePath);
+
+    // check file can be open or not 
+    if (writeFile.is_open()) {
+
+        writeFile << time << endl;
+        writeFile.close();
+
+        return true;
+    }
+
+    return false;
+}
 
 cv::Mat fromUint8ToMat(uint8_t* grayscaleImage, int width, int height) {
     cv::Mat out(height, width, CV_8UC1, grayscaleImage);
@@ -12,7 +59,7 @@ cv::Mat fromUint8ToMat(uint8_t* grayscaleImage, int width, int height) {
 }
 
 // convert uint8_t* grayscale image to a 2D array of complex numbers
-complex<double>** convertToComplex2D(const uint8_t* image, int width, int height) {
+complex<double>** convertUint8ToComplex2D(const uint8_t* image, int width, int height) {
     complex<double>** complex_image = new complex<double>*[height];
 
     for (int i = 0; i < height; ++i) {
@@ -25,7 +72,7 @@ complex<double>** convertToComplex2D(const uint8_t* image, int width, int height
     return complex_image;
 }
 
-uint8_t* convertToGrayscale(complex<double>** complex_image, int width, int height) {
+uint8_t* convertComplex2DToUint8(complex<double>** complex_image, int width, int height) {
     // Allocate memory for the output grayscale image
     uint8_t* grayscale_image = new uint8_t[width * height];
 
@@ -87,10 +134,10 @@ void testConversionToAndFromComplex() {
     }
 
     // Convert the grayscale image to a complex 2D array
-    complex<double>** complex_image = convertToComplex2D(grayscale_image, width, height);
+    complex<double>** complex_image = convertUint8ToComplex2D(grayscale_image, width, height);
 
     // Convert the complex image back to grayscale
-    uint8_t* reconstructed_image = convertToGrayscale(complex_image, width, height);
+    uint8_t* reconstructed_image = convertComplex2DToUint8(complex_image, width, height);
 
     // Print the reconstructed grayscale image
     cout << "Reconstructed Grayscale Image:" << endl;

@@ -101,7 +101,7 @@ bool testIFFT2D() {
     };
 
     // Convert the grayscale image to a 2D array of complex numbers
-    complex<double>** complex_image = convertToComplex2D(image, width, height);
+    complex<double>** complex_image = convertUint8ToComplex2D(image, width, height);
 
     // Perform 2D FFT
     complex<double>** fft_result = FFT2D(complex_image, width, height);
