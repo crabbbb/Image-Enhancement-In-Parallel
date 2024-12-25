@@ -80,31 +80,45 @@ complex<double>** FFT2D(complex<double>** image, int width, int height) {
 bool testFFT2D() {
     // Example grayscale image represented as uint8_t*
     const int width = 4;
-    const int height = 4;
+    const int height = 5;
     uint8_t image[width * height] = {
         1, 2, 3, 4,
         5, 6, 7, 8,
         9, 10, 11, 12,
-        13, 14, 15, 16
+        13, 14, 15, 16,
+        17, 18, 19, 20,
     };
 
     // Convert the grayscale image to a 2D array of complex numbers
     complex<double>** complex_image = convertUint8ToComplex2D(image, width, height);
 
+    // Zero-pad the image to power-of-two dimensions
+    int newWidth, newHeight;
+    complex<double>** padded_complex_image = zeroPad2D(
+        complex_image,  // original data
+        width,          // old width
+        height,         // old height
+        newWidth,       // [out] new width
+        newHeight       // [out] new height
+    );
+
+    // Cleanup original complex_image since we no longer need it
+    cleanup2DArray(complex_image, height);
+
     // Perform 2D FFT
-    complex<double>** fft_result = FFT2D(complex_image, width, height);
+    complex<double>** fft_result = FFT2D(padded_complex_image, newWidth, newHeight);
 
     // Output FFT result
     cout << "FFT2D Result:" << endl;
-    for (int i = 0; i < height; ++i) {
-        for (int j = 0; j < width; ++j) {
+    for (int i = 0; i < newHeight; ++i) {
+        for (int j = 0; j < newWidth; ++j) {
             cout << fft_result[i][j] << " ";
         }
         cout << endl;
     }
 
     // Cleanup
-    cleanup2DArray(fft_result, height);
+    cleanup2DArray(fft_result, newHeight);
 
     return true; // Placeholder: Add actual validation if needed
 }

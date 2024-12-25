@@ -9,9 +9,21 @@ bool storeDataIntoFile(double time, string fname, string imName);
 cv::Mat fromUint8ToMat(uint8_t* grayscaleImage, int width, int height);
 
 // Convert uint8_t* grayscale image to a 2D array of complex numbers
-complex<double>** convertToComplex2D(const uint8_t* image, int width, int height);
+complex<double>** convertUint8ToComplex2D(const uint8_t* image, int width, int height);
 
 // Convert 2D array of complex numbers to a uint8_t* grayscale image 
-uint8_t* convertToGrayscale(complex<double>** complex_image, int width, int height);
+uint8_t* convertComplex2DToUint8(complex<double>** complex_image, int width, int height);
 
-bool isPowerOfTwo(int n);
+int nextPowerOfTwo(int n);
+
+complex<double>** allocate2DArray(int height, int width);
+
+void cleanup2DArray(complex<double>**& array, int height);
+
+complex<double>** zeroPad2D(complex<double>** input,
+    int oldWidth, int oldHeight,
+    int& newWidth, int& newHeight);
+
+complex<double>** unzeroPad2D(complex<double>** padded,
+    int newWidth, int newHeight,
+    int oldWidth, int oldHeight);

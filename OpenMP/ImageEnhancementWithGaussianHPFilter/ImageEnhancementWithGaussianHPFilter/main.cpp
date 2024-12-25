@@ -11,22 +11,16 @@
 
 using namespace std;
 
+const int N = 10;
+const double CUTOFF_FREQUENCY = 100;
+const double ALPHA = 1.0;
+
 // all the processing done here 
 cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 
     // get width and height 
     int width = in_img.cols;
     int height = in_img.rows;
-
-    // ensure image dimensions are in powers of 2
-    if (!isPowerOfTwo(width) || !isPowerOfTwo(height)) {
-        cout << "Image size is not in powers of 2." << endl;
-        cout << "Displying back original image..." << endl;
-        return in_img;
-    }
-
-    // cutoff frequency for the Gaussian High-Pass Filter
-    double cutoff_frequency = 128;
 
     // convert image to grayscale 
     uint8_t* grayscaleImage = rgb_to_grayscale(in_img.data, width, height);
@@ -35,41 +29,57 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
     auto start = chrono::high_resolution_clock::now();
 
     // convert the grayscale image to a 2D complex array
-    complex<double>** complex_image = convertToComplex2D(grayscaleImage, width, height);
+    complex<double>** complex_image = convertUint8ToComplex2D(grayscaleImage, width, height);
+
+    // Zero-pad the image to power-of-two dimensions
+    int paddedWidth, paddedHeight;
+    complex<double>** padded_complex_image = zeroPad2D(
+        complex_image,  // original data
+        width,          // old width
+        height,         // old height
+        paddedWidth,       // [out] new width
+        paddedHeight       // [out] new height
+    );
+
+    // Cleanup original complexImage since we no longer need it
+    cleanup2DArray(complex_image, height);
 
     // Perform forward 2D FFT in-place
     cout << "Performing 2D FFT..." << endl;
     
-    FFT2D_inplace(complex_image, width, height, +1);
+    FFT2D_inplace(padded_complex_image, paddedWidth, paddedHeight, +1);
 
     // convert the fft complex to uint8_t with stop the timer 
     auto fftConvertStart = chrono::high_resolution_clock::now();
 
-    uint8_t* fftImage = convertToGrayscale(complex_image, width, height);
+    uint8_t* fftImage = convertComplex2DToUint8(padded_complex_image, paddedWidth, paddedHeight);
 
     auto fftConvertEnd = chrono::high_resolution_clock::now();
 
     // apply Gaussian High-Pass Filter
-    cout << "Applying Gaussian High-Pass Filter..." << endl;
-    complex<double>** filteredResult = gaussianHighPassFilter(complex_image, width, height, cutoff_frequency);
+    cout << "Applying unsharp masking with Gaussian High-Pass Filter..." << endl;
+    complex<double>** filteredResult = unsharpMaskingFrequencyDomain(padded_complex_image, paddedWidth, paddedHeight, CUTOFF_FREQUENCY, ALPHA);
 
     // convert the gaussian complex to uint8_t with stop the timer 
     auto gaussianConvertStart = chrono::high_resolution_clock::now();
 
-    uint8_t* gaussianImage = convertToGrayscale(filteredResult, width, height);
+    uint8_t* gaussianImage = convertComplex2DToUint8(filteredResult, paddedWidth, paddedHeight);
 
     auto gaussianConvertEnd = chrono::high_resolution_clock::now();
 
     // perform Inverse FFT
     cout << "Performing Inverse FFT..." << endl;
     // Optionally, perform inverse 2D FFT (just pass sign = -1)
-    FFT2D_inplace(filteredResult, width, height, -1);
+    FFT2D_inplace(filteredResult, paddedWidth, paddedHeight, -1);
 
     // end time 
     auto end = chrono::high_resolution_clock::now();
 
+    // crop the image back to original size
+    complex<double>** reconstructedImageWithPaddingRemoved = unzeroPad2D(filteredResult, paddedWidth, paddedHeight, width, height);
+
     // convert the ifft result back to uint8_t 
-    uint8_t* ifftImage = convertToGrayscale(filteredResult, width, height);
+    uint8_t* ifftImage = convertComplex2DToUint8(reconstructedImageWithPaddingRemoved, width, height);
 
     // calculate the different between fft and gaussian start end 
     auto fftDifferent = (chrono::duration_cast<chrono::milliseconds>(fftConvertEnd - fftConvertEnd)).count();
@@ -105,7 +115,7 @@ int main(int argc, char* argv[])
     string image[] = { "lena.jpeg", "wolf.jpg" };
 
     string basePath = "resource/raw/";
-    // string basePath "../../../resource/raw/";
+    //string basePath = "../../../resource/raw/";
 
     cv::Mat rgbImage;
     cv::Mat out;
@@ -115,7 +125,7 @@ int main(int argc, char* argv[])
         string imName = filesystem::path(im).stem().string();
         string completePath = basePath + im;
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < N; i++) {
             rgbImage = cv::imread(completePath);
             out = startProcessing(rgbImage, imName);
         }

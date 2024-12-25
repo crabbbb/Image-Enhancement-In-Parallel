@@ -17,6 +17,16 @@ complex<double>** convertUint8ToComplex2D(const uint8_t* image, int width, int h
 // Convert 2D array of complex numbers to a uint8_t* grayscale image 
 uint8_t* convertComplex2DToUint8(complex<double>** complex_image, int width, int height);
 
-bool isPowerOfTwo(int n);
-
 void testConversionToAndFromComplex();
+
+int nextPowerOfTwo(int n);
+
+complex<double>** allocate2DArray(int height, int width);
+
+complex<double>** zeroPad2D(complex<double>** input,
+    int oldWidth, int oldHeight,
+    int& newWidth, int& newHeight);
+
+complex<double>** unzeroPad2D(complex<double>** padded,
+    int newWidth, int newHeight,
+    int oldWidth, int oldHeight);
