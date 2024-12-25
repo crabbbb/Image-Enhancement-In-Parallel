@@ -57,7 +57,7 @@ cv::Mat fromUint8ToMat(uint8_t* grayscaleImage, int width, int height) {
     return out;
 }
 
-uint8_t* convertToGrayscale(complex<double>** complex_image, int width, int height) {
+uint8_t* convertComplex2DToUint8(complex<double>** complex_image, int width, int height) {
     // Allocate memory for the output grayscale image
     uint8_t* grayscale_image = new uint8_t[width * height];
 

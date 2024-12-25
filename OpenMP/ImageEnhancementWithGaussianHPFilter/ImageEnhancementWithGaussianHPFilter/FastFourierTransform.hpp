@@ -14,7 +14,7 @@ std::complex<double>** allocate2DComplex(int height, int width);
 
 void cleanup2DArray(std::complex<double>** arr, int height);
 
-std::complex<double>** convertToComplex2D(const uint8_t* image, int width, int height);
+std::complex<double>** convertUint8ToComplex2D(const uint8_t* image, int width, int height);
 
 void FFT2D_inplace(std::complex<double>** data, int width, int height, int sign = +1);
 

@@ -85,7 +85,7 @@ complex<double>** allocate2DComplex(int height, int width) {
 
 // Allocate a 2D array of complex<double>
 // convert uint8_t* grayscale image to a 2D array of complex numbers
-complex<double>** convertToComplex2D(const uint8_t* image, int width, int height) {
+complex<double>** convertUint8ToComplex2D(const uint8_t* image, int width, int height) {
     complex<double>** out = allocate2DComplex(height, width);
     for (int r = 0; r < height; ++r) {
         for (int c = 0; c < width; ++c) {
@@ -143,7 +143,7 @@ bool testFFT2D() {
     };
 
     // Convert the grayscale image to a 2D array of complex numbers
-    complex<double>** complex_image = convertToComplex2D(image, width, height);
+    complex<double>** complex_image = convertUint8ToComplex2D(image, width, height);
 
     // Perform forward 2D FFT in-place
     FFT2D_inplace(complex_image, width, height, +1);
