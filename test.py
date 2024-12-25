@@ -289,7 +289,7 @@ def createRuntimeDF(imName) :
     
     return df
 
-def drawRuntimeLineGraph(df, imName) :
+def drawRuntimeLineGraph(df, imName, basePath) :
     dfImage = df[df["imageName"] == imName]
     
     plt.figure(figsize=(9,6))
@@ -319,9 +319,9 @@ def drawRuntimeLineGraph(df, imName) :
     plt.xlabel("Column (1 to 10)")
     plt.ylabel("Time Used")
     plt.legend(title="Platform")
-    plt.savefig(f'{imName}_runtime.png')
+    plt.savefig(f'{basePath}{imName}_runtime.png')
 
-def drawAverageRuntimeBarPlot(imName, result) : 
+def drawAverageRuntimeBarPlot(imName, result, basePath) : 
     x = ["serial", "omp", "cuda"]
 
     y = []
@@ -337,9 +337,9 @@ def drawAverageRuntimeBarPlot(imName, result) :
     for i, value in enumerate(y):
         plt.text(i, value + max(y) * 0.01, f"{value:.5f}", ha='center')
 
-    plt.savefig(f'{imName}_avgruntime.png')
+    plt.savefig(f'{basePath}{imName}_avgruntime.png')
 
-def drawPerformanceGainBarPlot(result) : 
+def drawPerformanceGainBarPlot(result, basePath) : 
     columns = ["imageName", "platform", "performanceGain"]
 
     platHere = (platform.copy()).remove("serial")
@@ -362,7 +362,7 @@ def drawPerformanceGainBarPlot(result) :
     
     plt.title("Performance Gain : OMP vs. CUDA")
     
-    plt.savefig(f'peformanceGain.png')
+    plt.savefig(f'{basePath}peformanceGain.png')
 
 def calculateAverage(filePath) :
     result = readByLine(filePath=filePath)
@@ -395,20 +395,17 @@ def resultGenerate() :
         for im in imName : 
             label = f"{p}_{im}"
 
-            # calculate overall result first
-            timeOverallPath = f"{txtBasePath}{label}_{overall}.txt"
-            result["avg"][f"{label}_{overall}"] = calculateAverage(timeOverallPath)
-
             timeParallelPath = f"{txtBasePath}{label}.txt"
             result["avg"][f"{label}"] = calculateAverage(timeParallelPath)
+    
+    # performance gain and efficiency
+    for p in platform : 
+        for im in imName : 
+            if p != "serial" :
+                result["performanceGain"][f"{p}_{im}"] = result["avg"][f"serial_{im}"] / result["avg"][f"{p}_{im}"]
 
             # efficieny
             result["efficieny"][f"{label}"] = result["speedup"][f"{label}"]/(NUM_THREADS_OMP if p == "omp" else NUM_THREADS_CUDA)
-
-    # performance gain
-    for p in platform.remove("serial") : 
-        for im in imName : 
-            result["performanceGain"][f"{p}_{im}"] = result["avg"][f"serial_{im}"] / result["avg"][f"{p}_{im}"]
 
     # store into json file 
     with open(f"{outBasePath}performanceResult.json", "w") as file :
@@ -418,12 +415,12 @@ def resultGenerate() :
     for im in imName : 
         # get dataframe 
         df = createRuntimeDF(im)
-        drawRuntimeLineGraph(df, im)
+        drawRuntimeLineGraph(df, im, outBasePath)
 
         # average 
-        drawAverageRuntimeBarPlot(im, result)
+        drawAverageRuntimeBarPlot(im, result, outBasePath)
 
-    drawPerformanceGainBarPlot(result)
+    drawPerformanceGainBarPlot(result, outBasePath)
 
 def main() : 
     runAllCpp()
