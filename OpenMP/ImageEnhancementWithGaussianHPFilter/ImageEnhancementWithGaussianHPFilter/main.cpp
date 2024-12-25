@@ -11,7 +11,7 @@
 
 using namespace std;
 
-const int N = 1;
+const int N = 10;
 const double CUTOFF_FREQUENCY = 100;
 const double ALPHA = 1.0;
 
