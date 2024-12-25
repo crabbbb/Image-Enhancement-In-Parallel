@@ -19,18 +19,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="CUDA-FastFourierTransform.cu" />
-    <CudaCompile Include="CUDA-GaussianHPFilter.cu">
+    <CudaCompile Include="FastFourierTransform.cu" />
+    <CudaCompile Include="GaussianHPFilter.cu">
       <FileType>Document</FileType>
     </CudaCompile>
-    <CudaCompile Include="CUDA-ImageEnhancementWithGaussianHPFilter.cpp" />
-    <ClCompile Include="CUDA-main.cpp" />
-    <ClCompile Include="CUDA-Utils.cpp" />
+    <CudaCompile Include="test.cpp" />
+    <ClCompile Include="convertGrayscale.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CUDA-FastFourierTransform.cuh" />
-    <ClInclude Include="CUDA-GaussianHPFIlter.cuh" />
-    <ClInclude Include="CUDA-Utils.hpp" />
+    <ClInclude Include="convertGrayscale.hpp" />
+    <ClInclude Include="FastFourierTransform.cuh" />
+    <ClInclude Include="GaussianHPFIlter.cuh" />
+    <ClInclude Include="Utils.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
