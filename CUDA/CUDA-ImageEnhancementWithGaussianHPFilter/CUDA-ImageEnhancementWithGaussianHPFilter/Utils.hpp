@@ -14,6 +14,9 @@ cuDoubleComplex** allocate2DArray(int height, int width);
 cuDoubleComplex** zeroPad2D(cuDoubleComplex** input,
     int oldWidth, int oldHeight,
     int& newWidth, int& newHeight);
+//cuDoubleComplex** zeroPad2D(cuDoubleComplex** input,
+//    int oldWidth, int oldHeight,
+//    int& newWidth, int& newHeight, int& newSize);
 cuDoubleComplex** unzeroPad2D(cuDoubleComplex** padded,
     int newWidth, int newHeight,
     int oldWidth, int oldHeight);

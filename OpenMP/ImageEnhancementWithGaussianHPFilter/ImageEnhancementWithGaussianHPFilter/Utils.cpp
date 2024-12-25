@@ -9,8 +9,8 @@ using namespace std;
 
 bool storeDataIntoFile(double time, string fname, string imName) {
 
-    string filePath = "resource/timetaken/" + fname + "_" + imName + ".txt";
-    //string filePath = "../../../resource/timetaken/" + fname + "_" + imName + ".txt";
+    //string filePath = "resource/timetaken/" + fname + "_" + imName + ".txt";
+    string filePath = "../../../resource/timetaken/" + fname + "_" + imName + ".txt";
 
     // read file 
     ifstream readFile(filePath, ios::in);

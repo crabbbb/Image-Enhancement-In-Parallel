@@ -13,13 +13,14 @@
 //void testFFT2DToGaussianFilterToIFFT2D() {
 //    // Image dimensions
 //    const int width = 4;
-//    const int height = 4;
+//    const int height = 5;
 //
 //    // Simulated grayscale image (4x4)
 //    uint8_t image[width * height] = {
 //        1, 2, 3, 4,
 //        5, 6, 7, 8,
 //        9, 10, 11, 12,
+//        13, 14, 15, 16,
 //        13, 14, 15, 16,
 //    };
 //
@@ -106,16 +107,16 @@
 //    }
 //}
 //
-//void printFastFourierTransformTestResults() {
-//    /*bool testResults = testFFTAndIFFT();
-//    if (testResults) {
-//        cout << "Fast Fourier Transform working." << endl;
-//    }
-//    else {
-//        cout << "Fast Fourier Transform failed." << endl;
-//    }*/
-//    testFFTAndIFFT();
-//}
+////void printFastFourierTransformTestResults() {
+////    /*bool testResults = testFFTAndIFFT();
+////    if (testResults) {
+////        cout << "Fast Fourier Transform working." << endl;
+////    }
+////    else {
+////        cout << "Fast Fourier Transform failed." << endl;
+////    }*/
+////    testFFTAndIFFT();
+////}
 //
 //int testCUDA()
 //{
@@ -187,6 +188,6 @@
 //    //printGaussianFilterTestResults();
 //    //printFastFourierTransformTestResults();
 //    //printTestGrayscaleCuComplex2DConversion();
-//    //testFFT2DToGaussianFilterToIFFT2D();
+//    testFFT2DToGaussianFilterToIFFT2D();
 //    //system("pause");
 //}

@@ -204,6 +204,7 @@ cuDoubleComplex** zeroPad2D(cuDoubleComplex** input,
     newWidth = nextPowerOfTwo(oldWidth);
     newHeight = nextPowerOfTwo(oldHeight);
 
+
     // 2. Allocate new 2D array with padded dimensions
     cuDoubleComplex** padded = allocate2DArray(newHeight, newWidth);
 
@@ -223,6 +224,41 @@ cuDoubleComplex** zeroPad2D(cuDoubleComplex** input,
 
     return padded;
 }
+
+//cuDoubleComplex** zeroPad2D(cuDoubleComplex** input,
+//    int oldWidth, int oldHeight,
+//    int& newWidth, int& newHeight, int& newSize)
+//{
+//    // 1. Find next power of two in both dimensions
+//    newWidth = nextPowerOfTwo(oldWidth);
+//    newHeight = nextPowerOfTwo(oldHeight);
+//
+//    if (newWidth > newHeight) {
+//        newSize = newWidth;
+//    }
+//    else {
+//        newSize = newHeight;
+//    }
+//
+//    // 2. Allocate new 2D array with padded dimensions
+//    cuDoubleComplex** padded = allocate2DArray(newSize, newSize);
+//
+//    // 3. Copy old data to top-left corner and zero-fill the remaining area
+//    for (int r = 0; r < newSize; ++r) {
+//        for (int c = 0; c < newSize; ++c) {
+//            if (r < oldHeight && c < oldWidth) {
+//                // Copy from original
+//                padded[r][c] = input[r][c];
+//            }
+//            else {
+//                // Outside original region -> zero
+//                padded[r][c] = make_cuDoubleComplex(0.0, 0.0);
+//            }
+//        }
+//    }
+//
+//    return padded;
+//}
 
 cuDoubleComplex** unzeroPad2D(cuDoubleComplex** padded,
     int newWidth, int newHeight,

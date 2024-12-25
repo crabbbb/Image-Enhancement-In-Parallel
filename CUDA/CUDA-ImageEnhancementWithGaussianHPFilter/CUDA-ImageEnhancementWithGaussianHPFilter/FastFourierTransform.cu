@@ -1,322 +1,429 @@
+/************************************************************************
+ * Manual 2D FFT in CUDA using Cooley-Tukey - Supports Rectangular Images
+ * ----------------------------------------------------------------------
+ * - Accepts/returns cuDoubleComplex** at the host side
+ * - Internally flattens data into a 1D GPU buffer for batched processing
+ * - Row transform:  length = width, batchCount = height
+ * - Transpose       (height x width) -> (width x height)
+ * - Column transform: length = height, batchCount = width
+ * - Transpose back
+ *
+ * For inverse transform, each 1D pass scales by (1 / length), so total
+ * scaling is (1 / (width*height)).
+ ************************************************************************/
+
 #include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 #include <cuComplex.h>
 #include <iostream>
 #include <cmath>
-#include "device_launch_parameters.h"
-#include "Utils.hpp"
+#include <cstdlib>   // for std::exit
+#include <cstring>   // for std::memcpy
 
+#ifndef M_PI
 #define M_PI 3.14159265358979323846
+#endif
 
-// --------------------------
-// Bit-Reversal Helper Routines
-// --------------------------
-int bitReverseIndex(int x, int log2N) {
-    int reversed = 0;
-    for (int i = 0; i < log2N; i++) {
-        reversed = (reversed << 1) | (x & 1);
-        x >>= 1;
-    }
-    return reversed;
-}
+ // ---------------------------------------------------------------------
+ // Simple CUDA error-checking macro
+ // ---------------------------------------------------------------------
+#define CHECK_CUDA_ERR(msg) do {                                 \
+    cudaError_t err = cudaGetLastError();                        \
+    if (err != cudaSuccess) {                                    \
+        std::cerr << msg << " (error " << err << "): "           \
+                  << cudaGetErrorString(err) << std::endl;       \
+        std::exit(EXIT_FAILURE);                                 \
+    }                                                            \
+} while(0)
 
-void bitReverseReorder(cuDoubleComplex* data, int N) {
-    // Compute log2(N)
-    int log2N = 0;
-    while ((1 << log2N) < N) {
-        log2N++;
-    }
+// =====================================================================
+// 1) Kernels for batched 1D FFT (Cooley–Tukey) in "row-major" slices
+// =====================================================================
 
-    // Swap each element with its bit-reversed index
-    for (int i = 0; i < N; i++) {
-        int r = bitReverseIndex(i, log2N);
-        if (r > i) {
-            cuDoubleComplex temp = data[i];
-            data[i] = data[r];
-            data[r] = temp;
+// (a) Bit-reversal permutation for each "row" of length = `length`
+__global__ void BitReverseRowKernel(
+    cuDoubleComplex* d_data,
+    int length,       // how many elements per row transform
+    int batchCount,   // how many rows/batches
+    int log2Len       // log2(length)
+)
+{
+    int batch = blockIdx.y;  // which row/batch
+    if (batch >= batchCount) return;
+
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid < length) {
+        // bit-reverse 'tid' within [0, length)
+        int x = tid;
+        int r = 0;
+        for (int i = 0; i < log2Len; i++) {
+            r = (r << 1) | (x & 1);
+            x >>= 1;
+        }
+        if (r > tid) {
+            int rowOffset = batch * length;
+            // swap
+            cuDoubleComplex tmp = d_data[rowOffset + tid];
+            d_data[rowOffset + tid] = d_data[rowOffset + r];
+            d_data[rowOffset + r] = tmp;
         }
     }
 }
 
-// -------------------------------------------------------
-// A single kernel that can do either forward or inverse
-// butterfly pass based on 'sign'.
-//
-// sign = -1 => forward FFT (exp(-i*...))
-// sign = +1 => inverse FFT (exp(+i*...))
-//
-// halfSize is the "sub-block" size for this pass; full
-// butterfly size is 2*halfSize.
-// -------------------------------------------------------
-__global__ void CooleyTukey1DKernel(cuDoubleComplex* data, int size, int halfSize, int sign)
+// (b) One pass of the Cooley–Tukey butterfly for each row
+__global__ void CooleyTukeyRowKernel(
+    cuDoubleComplex* d_data,
+    int length,
+    int batchCount,
+    int halfSize,
+    int sign // -1 => forward, +1 => inverse
+)
 {
+    int batch = blockIdx.y;
+    if (batch >= batchCount) return;
+
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    int totalButterflies = size / 2; // total # of pairs in this pass
+    int totalButterflies = length / 2; // # of butterfly pairs per row
 
     if (tid < totalButterflies) {
-        // Identify which block of size 2*halfSize we are in
         int blockIndex = tid / halfSize;
         int t = tid % halfSize;
-        int butterflySize = 2 * halfSize;
+        int butterflySz = 2 * halfSize;
 
-        // evenIndex, oddIndex
-        int evenIndex = blockIndex * butterflySize + t;
+        int rowOffset = batch * length;
+        int evenIndex = rowOffset + blockIndex * butterflySz + t;
         int oddIndex = evenIndex + halfSize;
 
-        cuDoubleComplex even = data[evenIndex];
-        cuDoubleComplex odd = data[oddIndex];
+        cuDoubleComplex even = d_data[evenIndex];
+        cuDoubleComplex odd = d_data[oddIndex];
 
-        // angle depends on sign (-1 => forward, +1 => inverse)
-        double angle = sign * 2.0 * M_PI * t / (double)butterflySize;
-        cuDoubleComplex twiddle = make_cuDoubleComplex(cos(angle), sin(angle));
+        double angle = sign * 2.0 * M_PI * t / (double)butterflySz;
+        cuDoubleComplex w = make_cuDoubleComplex(cos(angle), sin(angle));
 
-        cuDoubleComplex product = cuCmul(twiddle, odd);
-        data[evenIndex] = cuCadd(even, product); // even + product
-        data[oddIndex] = cuCsub(even, product); // even - product
+        cuDoubleComplex product = cuCmul(w, odd);
+        d_data[evenIndex] = cuCadd(even, product);
+        d_data[oddIndex] = cuCsub(even, product);
     }
 }
 
-// -------------------------------------------------------
-// GPU kernel to scale the entire array by a constant factor
-// -------------------------------------------------------
-__global__ void ScaleKernel(cuDoubleComplex* data, int size, double scale)
+// (c) Scale kernel: multiply each element in row by (1 / length) if doing inverse
+__global__ void ScaleRowKernel(
+    cuDoubleComplex* d_data,
+    int length,
+    int batchCount,
+    double scale
+)
 {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < size) {
-        data[idx] = make_cuDoubleComplex(
-            cuCreal(data[idx]) * scale,
-            cuCimag(data[idx]) * scale
+    int batch = blockIdx.y;
+    if (batch >= batchCount) return;
+
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid < length) {
+        int idx = batch * length + tid;
+        double re = cuCreal(d_data[idx]);
+        double im = cuCimag(d_data[idx]);
+        d_data[idx] = make_cuDoubleComplex(scale * re, scale * im);
+    }
+}
+
+// =====================================================================
+// 2) Kernel to transpose a (height x width) buffer into (width x height)
+//    d_out[col * height + row] = d_in[row * width + col]
+// =====================================================================
+__global__ void TransposeKernel(
+    cuDoubleComplex* d_out,
+    const cuDoubleComplex* d_in,
+    int width,
+    int height
+)
+{
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (row < height && col < width) {
+        int inIdx = row * width + col;
+        int outIdx = col * height + row;
+        d_out[outIdx] = d_in[inIdx];
+    }
+}
+
+// =====================================================================
+// 3) Host function to do a batched 1D FFT for either row or column pass
+//    length  = number of samples in one row transform
+//    batches = how many rows
+//    forward = true => sign=-1, else sign=+1 and scale by 1/length
+// =====================================================================
+static void BatchFFT_1D(
+    cuDoubleComplex* d_data,
+    int length,
+    int batches,
+    bool forward
+)
+{
+    // 1) bit-reversal
+    int log2Len = 0;
+    while ((1 << log2Len) < length) log2Len++;
+
+    dim3 block(256, 1);
+    dim3 grid((length + block.x - 1) / block.x, batches);
+
+    BitReverseRowKernel << <grid, block >> > (d_data, length, batches, log2Len);
+    CHECK_CUDA_ERR("BitReverseRowKernel");
+
+    // 2) iterative passes
+    int sign = (forward ? -1 : +1);
+
+    for (int halfSize = 1; halfSize < length; halfSize *= 2) {
+        int totalButterflies = length / 2;
+        dim3 gridBfly((totalButterflies + block.x - 1) / block.x, batches);
+        CooleyTukeyRowKernel << <gridBfly, block >> > (d_data, length, batches, halfSize, sign);
+        CHECK_CUDA_ERR("CooleyTukeyRowKernel");
+    }
+
+    // 3) scale if inverse
+    if (!forward) {
+        dim3 gridScale((length + block.x - 1) / block.x, batches);
+        double scaleFactor = 1.0 / (double)length;
+        ScaleRowKernel << <gridScale, block >> > (d_data, length, batches, scaleFactor);
+        CHECK_CUDA_ERR("ScaleRowKernel");
+    }
+}
+
+// =====================================================================
+// 4) Full 2D FFT (rectangular: width x height) in place on d_data
+//    forward=true => forward FFT
+//    forward=false => inverse FFT
+//
+//    Step-by-step:
+//      - Row pass:   length=width,  batches=height
+//      - Transpose:  out = size(width*height)
+//      - Column pass: length=height, batches=width
+//      - Transpose:  back
+//
+//    If inverse, each 1D pass scales by (1/length), so total = 1/(width*height).
+// =====================================================================
+static void FFT2D_CUDA(
+    cuDoubleComplex* d_data,
+    int width,
+    int height,
+    bool forward
+)
+{
+    // 1) Row-wise transform: length=width, batches=height
+    BatchFFT_1D(d_data, width, height, forward);
+
+    // 2) Transpose (height x width) -> (width x height)
+    cuDoubleComplex* d_tmp = nullptr;
+    cudaMalloc(&d_tmp, width * height * sizeof(cuDoubleComplex));
+
+    dim3 block(16, 16);
+    dim3 grid(
+        (width + block.x - 1) / block.x,
+        (height + block.y - 1) / block.y
+    );
+
+    TransposeKernel << <grid, block >> > (d_tmp, d_data, width, height);
+    CHECK_CUDA_ERR("TransposeKernel #1");
+
+    // 3) Now d_tmp has shape (width x height) in row-major
+    //    So "rows" = width, "row length" = height for the next pass
+    BatchFFT_1D(d_tmp, height, width, forward);
+
+    // 4) Transpose back (width x height) -> (height x width)
+    //    which is effectively your original row-major shape
+    //    i.e., d_data again
+    //    We just swap the width/height in the transpose call
+    {
+        dim3 grid2(
+            (height + block.x - 1) / block.x,
+            (width + block.y - 1) / block.y
+        );
+        TransposeKernel << <grid2, block >> > (d_data, d_tmp, height, width);
+        CHECK_CUDA_ERR("TransposeKernel #2");
+    }
+
+    cudaFree(d_tmp);
+}
+
+// =====================================================================
+// 5) Flatten / unflatten host arrays
+// =====================================================================
+static void flattenHostArray(
+    cuDoubleComplex** input2D,
+    cuDoubleComplex* output1D,
+    int width,
+    int height
+)
+{
+    for (int r = 0; r < height; r++) {
+        std::memcpy(
+            &output1D[r * width],
+            input2D[r],
+            width * sizeof(cuDoubleComplex)
         );
     }
 }
 
-// -------------------------------------------------------
-// Single routine for 1D FFT or IFFT, controlled by `forward`.
-//
-// forward = true  => forward FFT
-// forward = false => inverse FFT
-//
-// The only differences: 
-//   - sign in the exponential ( -1 vs +1 )
-//   - final scale ( if inverse, divide by size )
-// -------------------------------------------------------
-void Do1DFFT(cuDoubleComplex* h_input, cuDoubleComplex* h_output, int size, bool forward)
+static void unflattenHostArray(
+    const cuDoubleComplex* input1D,
+    cuDoubleComplex** output2D,
+    int width,
+    int height
+)
 {
-    // 1) Bit-reversal reorder on the host
-    bitReverseReorder(h_input, size);
-
-    // 2) Copy to device
-    cuDoubleComplex* d_data = nullptr;
-    cudaMalloc(&d_data, size * sizeof(cuDoubleComplex));
-    cudaMemcpy(d_data, h_input, size * sizeof(cuDoubleComplex), cudaMemcpyHostToDevice);
-
-    // 3) Kernel config
-    int threadsPerBlock = 256;
-    int totalButterflies = size / 2;
-    int blocksPerGrid = (totalButterflies + threadsPerBlock - 1) / threadsPerBlock;
-
-    // sign = -1 for forward FFT, +1 for inverse FFT
-    int sign = (forward ? -1 : +1);
-
-    // 4) Iterative passes (log2(size) passes)
-    for (int halfSize = 1; halfSize < size; halfSize *= 2) {
-        CooleyTukey1DKernel << <blocksPerGrid, threadsPerBlock >> > (d_data, size, halfSize, sign);
-        cudaDeviceSynchronize();
+    for (int r = 0; r < height; r++) {
+        std::memcpy(
+            output2D[r],
+            &input1D[r * width],
+            width * sizeof(cuDoubleComplex)
+        );
     }
-
-    // 5) If inverse, scale by (1/size) to complete the normalization
-    if (!forward) {
-        int totalThreads = size;
-        int scaleBlocks = (totalThreads + threadsPerBlock - 1) / threadsPerBlock;
-        ScaleKernel << <scaleBlocks, threadsPerBlock >> > (d_data, size, 1.0 / (double)size);
-        cudaDeviceSynchronize();
-    }
-
-    // 6) Copy result back
-    cudaMemcpy(h_output, d_data, size * sizeof(cuDoubleComplex), cudaMemcpyDeviceToHost);
-
-    // 7) Cleanup
-    cudaFree(d_data);
 }
 
-// -------------------------------------------------------
-// Forward 1D FFT wrapper (for convenience)
-// -------------------------------------------------------
-void FFT1DParallel(cuDoubleComplex* h_input, cuDoubleComplex* h_output, int size)
-{
-    Do1DFFT(h_input, h_output, size, true /* forward */);
-}
-
-// -------------------------------------------------------
-// Forward 2D FFT Implementation
-// -------------------------------------------------------
-// -------------------------------------------------------
-// Forward 2D FFT Implementation (receives cuDoubleComplex**)
-// -------------------------------------------------------
+// =====================================================================
+// 6) Public function: Forward 2D FFT (rectangular)
+// =====================================================================
 cuDoubleComplex** FFT2DParallel(cuDoubleComplex** inputImage, int width, int height)
 {
-    // Allocate container for the final 2D FFT result
+    // Allocate a new host 2D array for the result
     cuDoubleComplex** fft_result = new cuDoubleComplex * [height];
-    for (int i = 0; i < height; ++i) {
+    for (int i = 0; i < height; i++) {
         fft_result[i] = new cuDoubleComplex[width];
     }
 
-    // 1) Row-wise transform
-    for (int i = 0; i < height; ++i) {
-        // Copy row i from inputImage to a temporary buffer
-        cuDoubleComplex* row_data = new cuDoubleComplex[width];
-        for (int c = 0; c < width; ++c) {
-            row_data[c] = inputImage[i][c];
-        }
+    // Flatten input
+    cuDoubleComplex* h_temp = new cuDoubleComplex[width * height];
+    flattenHostArray(inputImage, h_temp, width, height);
 
-        // Forward 1D FFT on this row
-        FFT1DParallel(row_data, fft_result[i], width);
+    // GPU alloc
+    cuDoubleComplex* d_data = nullptr;
+    cudaMalloc(&d_data, width * height * sizeof(cuDoubleComplex));
 
-        delete[] row_data;
-    }
+    // Copy to device
+    cudaMemcpy(d_data, h_temp, width * height * sizeof(cuDoubleComplex), cudaMemcpyHostToDevice);
 
-    // 2) Column-wise transform
-    cuDoubleComplex* colData = new cuDoubleComplex[height];
-    cuDoubleComplex* colFFT = new cuDoubleComplex[height];
+    // Forward 2D FFT
+    FFT2D_CUDA(d_data, width, height, true /* forward */);
 
-    for (int j = 0; j < width; ++j) {
-        // Gather the j-th column from fft_result
-        for (int i = 0; i < height; ++i) {
-            colData[i] = fft_result[i][j];
-        }
+    // Copy back
+    cudaMemcpy(h_temp, d_data, width * height * sizeof(cuDoubleComplex), cudaMemcpyDeviceToHost);
 
-        // Forward 1D FFT on this column
-        FFT1DParallel(colData, colFFT, height);
+    // Unflatten
+    unflattenHostArray(h_temp, fft_result, width, height);
 
-        // Scatter results back into fft_result
-        for (int i = 0; i < height; ++i) {
-            fft_result[i][j] = colFFT[i];
-        }
-    }
-
-    delete[] colData;
-    delete[] colFFT;
+    // Cleanup
+    delete[] h_temp;
+    cudaFree(d_data);
 
     return fft_result;
 }
 
-// -------------------------------------------------------
-// Inverse 1D FFT wrapper (for convenience)
-// -------------------------------------------------------
-void IFFT1DParallel(cuDoubleComplex* h_input, cuDoubleComplex* h_output, int size)
-{
-    Do1DFFT(h_input, h_output, size, false /* inverse */);
-}
-
-// -------------------------------------------------------
-// Inverse 2D FFT Implementation
-//
-// Assumes 'freqData' is the output of a forward 2D FFT,
-// i.e. the frequency domain representation.
-//
-// We'll do row-wise inverse, then column-wise inverse.
-// Each 1D inverse transforms divides by its dimension,
-// so the final image is scaled by (1 / (width * height)) overall.
-// -------------------------------------------------------
+// =====================================================================
+// 7) Public function: Inverse 2D FFT (rectangular)
+// =====================================================================
 cuDoubleComplex** IFFT2DParallel(cuDoubleComplex** freqData, int width, int height)
 {
-    // Allocate container for 2D IFFT result
     cuDoubleComplex** spatial_result = new cuDoubleComplex * [height];
-    for (int i = 0; i < height; ++i) {
+    for (int i = 0; i < height; i++) {
         spatial_result[i] = new cuDoubleComplex[width];
     }
 
-    // 1) Perform inverse 1D transform row-wise
-    for (int i = 0; i < height; ++i) {
-        // Copy row i
-        cuDoubleComplex* rowCopy = new cuDoubleComplex[width];
-        for (int c = 0; c < width; ++c) {
-            rowCopy[c] = freqData[i][c];
-        }
+    // Flatten
+    cuDoubleComplex* h_temp = new cuDoubleComplex[width * height];
+    flattenHostArray(freqData, h_temp, width, height);
 
-        IFFT1DParallel(rowCopy, spatial_result[i], width);
-        delete[] rowCopy;
-    }
+    // GPU alloc
+    cuDoubleComplex* d_data = nullptr;
+    cudaMalloc(&d_data, width * height * sizeof(cuDoubleComplex));
+    cudaMemcpy(d_data, h_temp, width * height * sizeof(cuDoubleComplex), cudaMemcpyHostToDevice);
 
-    // 2) Perform inverse 1D transform column-wise
-    cuDoubleComplex* colData = new cuDoubleComplex[height];
-    cuDoubleComplex* colIFFT = new cuDoubleComplex[height];
+    // Inverse 2D FFT
+    FFT2D_CUDA(d_data, width, height, false /* inverse */);
 
-    for (int j = 0; j < width; ++j) {
-        // Gather j-th column
-        for (int i = 0; i < height; ++i) {
-            colData[i] = spatial_result[i][j];
-        }
+    // Copy back
+    cudaMemcpy(h_temp, d_data, width * height * sizeof(cuDoubleComplex), cudaMemcpyDeviceToHost);
 
-        IFFT1DParallel(colData, colIFFT, height);
+    // Unflatten
+    unflattenHostArray(h_temp, spatial_result, width, height);
 
-        // Put results back
-        for (int i = 0; i < height; ++i) {
-            spatial_result[i][j] = colIFFT[i];
-        }
-    }
-
-    delete[] colData;
-    delete[] colIFFT;
+    // Cleanup
+    delete[] h_temp;
+    cudaFree(d_data);
 
     return spatial_result;
 }
 
-// -------------------------------------------------------
-// Test function demonstrating forward & inverse 2D FFT
-// -------------------------------------------------------
-void testFFTAndIFFT() {
-    const int width = 4;
-    const int height = 4;
-
-    uint8_t image[width * height] = {
-         1,  2,  3,  4,
-         5,  6,  7,  8,
-         9, 10, 11, 12,
-        13, 14, 15, 16
-    };
-
-    std::cout << "Input Grayscale Image:\n";
-    for (int i = 0; i < height; ++i) {
-        for (int j = 0; j < width; ++j) {
-            std::cout << (int)image[i * width + j] << " ";
+// =====================================================================
+// 8) Example test
+//    We'll test with a non-square array, e.g. width=6, height=4
+// =====================================================================
+static void printComplex2D(
+    cuDoubleComplex** arr,
+    int w, int h,
+    const char* msg,
+    bool showImag = false
+)
+{
+    std::cout << msg << ":\n";
+    for (int r = 0; r < h; r++) {
+        for (int c = 0; c < w; c++) {
+            double re = cuCreal(arr[r][c]);
+            double im = cuCimag(arr[r][c]);
+            if (!showImag) {
+                // Print real part only (to see if we got back original data)
+                std::cout << re << " ";
+            }
+            else {
+                // Full complex
+                std::cout << "(" << re << "," << im << ") ";
+            }
         }
         std::cout << "\n";
     }
-
-    cuDoubleComplex** complex_image = convertUint8ToCuComplex2D(image, width, height);
-
-    // 1) Forward 2D FFT
-    cuDoubleComplex** fft_result = FFT2DParallel(complex_image, width, height);
-
-    std::cout << "\n2D FFT Output (Complex Values):\n";
-    for (int i = 0; i < height; ++i) {
-        for (int j = 0; j < width; ++j) {
-            double re = cuCreal(fft_result[i][j]);
-            double im = cuCimag(fft_result[i][j]);
-            std::cout << "(" << re << ", " << im << ") ";
-        }
-        std::cout << "\n";
-    }
-
-    // 2) Inverse 2D FFT (reconstruct spatial image)
-    cuDoubleComplex** ifft_result = IFFT2DParallel(fft_result, width, height);
-
-    std::cout << "\nInverse 2D FFT (Reconstructed) [real parts]:\n";
-    for (int i = 0; i < height; ++i) {
-        for (int j = 0; j < width; ++j) {
-            double re = cuCreal(ifft_result[i][j]);
-            // Typically we'd expect near integer values (1..16), so let's print them
-            std::cout << re << " ";
-        }
-        std::cout << "\n";
-    }
-
-    // Cleanup
-    for (int i = 0; i < height; ++i) {
-        delete[] fft_result[i];
-        delete[] ifft_result[i];
-    }
-    delete[] fft_result;
-    delete[] ifft_result;
-
+    std::cout << std::endl;
 }
+
+//int main()
+//{
+//    // Example: 4 rows, 6 columns (rectangular)
+//    const int width = 6;
+//    const int height = 4;
+//
+//    // Allocate host 2D input
+//    cuDoubleComplex** inputImage = new cuDoubleComplex * [height];
+//    for (int r = 0; r < height; r++) {
+//        inputImage[r] = new cuDoubleComplex[width];
+//    }
+//
+//    // Fill with some test data
+//    // Let's just do ascending values from 1..(width*height)
+//    int val = 1;
+//    for (int r = 0; r < height; r++) {
+//        for (int c = 0; c < width; c++) {
+//            inputImage[r][c] = make_cuDoubleComplex((double)val++, 0.0);
+//        }
+//    }
+//
+//    // Print input
+//    printComplex2D(inputImage, width, height, "Input Image (real)", false);
+//
+//    // 1) Forward FFT
+//    cuDoubleComplex** freq = FFT2DParallel(inputImage, width, height);
+//    printComplex2D(freq, width, height, "Frequency domain (full complex)", true);
+//
+//    // 2) Inverse FFT
+//    cuDoubleComplex** recon = IFFT2DParallel(freq, width, height);
+//    printComplex2D(recon, width, height, "Reconstructed (real parts)", false);
+//
+//    // Cleanup
+//    for (int r = 0; r < height; r++) {
+//        delete[] inputImage[r];
+//        delete[] freq[r];
+//        delete[] recon[r];
+//    }
+//    delete[] inputImage;
+//    delete[] freq;
+//    delete[] recon;
+//
+//    return 0;
+//}

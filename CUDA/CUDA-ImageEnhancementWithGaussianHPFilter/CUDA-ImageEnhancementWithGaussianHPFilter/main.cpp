@@ -11,7 +11,7 @@
 
 using namespace std;
 
-const int N = 10;
+const int N = 1;
 const double CUTOFF_FREQUENCY = 100;
 const double ALPHA = 1.0;
 
@@ -32,7 +32,7 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
     cuDoubleComplex** complex_image = convertUint8ToCuComplex2D(grayscaleImage, width, height);
 
     // Zero-pad the image to power-of-two dimensions
-    int paddedWidth, paddedHeight;
+    int paddedWidth, paddedHeight, paddedSquareSize;
     cuDoubleComplex** padded_complex_image = zeroPad2D(
         complex_image,  // original data
         width,          // old width
@@ -41,12 +41,11 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
         paddedHeight       // [out] new height
     );
 
-    // Cleanup original complexImage since we no longer need it
-    cleanup2DArray(complex_image, height);
+    
 
     // Perform forward 2D FFT in-place
     cout << "Performing 2D FFT..." << endl;
-
+    printf("%d %d", paddedWidth, paddedHeight);
     cuDoubleComplex** fftResult = FFT2DParallel(padded_complex_image, paddedWidth, paddedHeight);
 
     // convert the fft complex to uint8_t with stop the timer 
@@ -106,12 +105,20 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
     //cv::imwrite("resource/result/cuda/" + imName + "_ifft.jpg", out_img);
     cv::imwrite("../../../resource/result/cuda/" + imName + "_ifft.jpg", out_img);
 
+    // Cleanup original complexImage since we no longer need it
+    cleanup2DArray(complex_image, height);
+    cleanup2DArray(fftResult, paddedHeight);
+    cleanup2DArray(filteredResult, paddedHeight);
+    cleanup2DArray(reconstructedImage, paddedHeight);
+    cleanup2DArray(reconstructedImageWithPaddingRemoved, height);
+
     return out_img;
 }
 
 int main(int argc, char* argv[])
 {
-    string image[] = { "lena.jpeg", "wolf.jpg" };
+    //string image[] = { "lena.jpeg", "wolf.jpg" };
+    string image[] = { "doggo.jpg", "bigimg.jpg", "cameragirl.jpeg", "lena.jpeg", "wolf.jpg" };
 
     //string basePath = "resource/raw/";
     string basePath = "../../../resource/raw/";
