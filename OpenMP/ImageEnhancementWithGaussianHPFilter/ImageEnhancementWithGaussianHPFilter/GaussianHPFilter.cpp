@@ -3,8 +3,30 @@
 #include <iostream>
 #include <omp.h>
 #include "GaussianHPFilter.hpp"
+#include "Utils.hpp"
 
 using namespace std;
+
+// Shift frequency data so that the DC component is moved from (0,0) to (height/2, width/2).
+void fftShift2D(std::complex<double>** data, int width, int height)
+{
+    int h2 = height / 2;
+    int w2 = width / 2;
+
+    // Swap top-left with bottom-right
+    for (int u = 0; u < h2; ++u) {
+        for (int v = 0; v < w2; ++v) {
+            std::swap(data[u][v], data[u + h2][v + w2]);
+        }
+    }
+
+    // Swap top-right with bottom-left
+    for (int u = 0; u < h2; ++u) {
+        for (int v = w2; v < width; ++v) {
+            std::swap(data[u][v], data[u + h2][v - w2]);
+        }
+    }
+}
 
 // Function to compute Gaussian High-Pass Filter for a given pixel
 double computeHighPassValue(int u, int v, int height, int width, double cutoff_frequency) {
@@ -58,6 +80,41 @@ complex<double>** gaussianHighPassFilter(
 
     // Return the filtered output array
     return G;
+}
+
+// New function for unsharp masking
+complex<double>** unsharpMaskingFrequencyDomain(
+    complex<double>** F_unshifted, // Frequency data in "normal" layout (DC at top-left)
+    int width,
+    int height,
+    double cutoff_frequency,
+    double alpha)
+{
+    // Shift F so that DC is at the center (this is required for a radial Gaussian HP).
+    fftShift2D(F_unshifted, width, height);
+
+    // 1. Get high-pass filtered version of the input image in frequency domain
+    complex<double>** F_HP = gaussianHighPassFilter(F_unshifted, width, height, cutoff_frequency);
+
+    // 2. Create a new 2D array to store the unsharp masked result: 
+    //    F_sharp(u,v) = F(u,v) + alpha * F_HP(u,v)
+    complex<double>** F_sharp = allocate2DArray(height, width);
+
+    // 3. Combine original + scaled high-pass
+    for (int u = 0; u < height; ++u) {
+        for (int v = 0; v < width; ++v) {
+            F_sharp[u][v] = F_unshifted[u][v] + alpha * F_HP[u][v];
+        }
+    }
+
+    // Shift the result back so DC is at(0, 0) again
+    fftShift2D(F_sharp, width, height);
+
+    // 4. Clean up the HPF array if you want
+    cleanup2DArray(F_HP, height);
+
+    // Return the frequency-domain data of the sharpened image
+    return F_sharp;
 }
 
 bool testGaussianHighPassFilter() {
