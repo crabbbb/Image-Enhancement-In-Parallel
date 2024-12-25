@@ -11,6 +11,8 @@
 
 using namespace std;
 
+const int N = 10;
+
 // all the processing done here 
 cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 
@@ -35,7 +37,7 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
     auto start = chrono::high_resolution_clock::now();
 
     // convert the grayscale image to a 2D complex array
-    complex<double>** complex_image = convertToComplex2D(grayscaleImage, width, height);
+    complex<double>** complex_image = convertUint8ToComplex2D(grayscaleImage, width, height);
 
     // Perform forward 2D FFT in-place
     cout << "Performing 2D FFT..." << endl;
@@ -45,7 +47,7 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
     // convert the fft complex to uint8_t with stop the timer 
     auto fftConvertStart = chrono::high_resolution_clock::now();
 
-    uint8_t* fftImage = convertToGrayscale(complex_image, width, height);
+    uint8_t* fftImage = convertComplex2DToUint8(complex_image, width, height);
 
     auto fftConvertEnd = chrono::high_resolution_clock::now();
 
@@ -56,7 +58,7 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
     // convert the gaussian complex to uint8_t with stop the timer 
     auto gaussianConvertStart = chrono::high_resolution_clock::now();
 
-    uint8_t* gaussianImage = convertToGrayscale(filteredResult, width, height);
+    uint8_t* gaussianImage = convertComplex2DToUint8(filteredResult, width, height);
 
     auto gaussianConvertEnd = chrono::high_resolution_clock::now();
 
@@ -69,7 +71,7 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
     auto end = chrono::high_resolution_clock::now();
 
     // convert the ifft result back to uint8_t 
-    uint8_t* ifftImage = convertToGrayscale(filteredResult, width, height);
+    uint8_t* ifftImage = convertComplex2DToUint8(filteredResult, width, height);
 
     // calculate the different between fft and gaussian start end 
     auto fftDifferent = (chrono::duration_cast<chrono::milliseconds>(fftConvertEnd - fftConvertEnd)).count();
@@ -115,7 +117,7 @@ int main(int argc, char* argv[])
         string imName = filesystem::path(im).stem().string();
         string completePath = basePath + im;
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < N; i++) {
             rgbImage = cv::imread(completePath);
             out = startProcessing(rgbImage, imName);
         }
