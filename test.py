@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import math
 import json
+import numpy as np
 
 SERIALEXE = "serial.exe"
 OMPEXE = "omp.exe"
@@ -17,6 +18,10 @@ TXT_LOCATION = r"resource/timetaken/"
 # number of Loops 
 N = 10
 
+# numvber of threads
+NUM_THREADS_OMP = 8 
+NUM_THREADS_CUDA = 16 * 16
+
 # opencv path for MinGW 
 OPEN_CV_INCLUDE = r"C:/opencv-mingw/install/include"
 OPEN_LIB_LOCATION = r"C:/opencv-mingw/install/x64/mingw/lib"
@@ -25,6 +30,9 @@ OPEN_BIN_LOCATION = r"C:/opencv-mingw/install/x64/mingw/bin"
 # update path to let the system can find the needed opencv dll file from the location 
 newPath = OPEN_BIN_LOCATION + os.pathsep + os.environ["PATH"]
 os.environ["PATH"] = newPath
+
+platform = ["serial", "omp", "cuda"]
+imName = ["lena", "wolf"]
 
 def executeExe(exeLocation) : 
     runCmd = [f"{exeLocation}"]
@@ -241,7 +249,11 @@ def compileCUDA() :
         print("Compiler error output : ", e.stderr)
         exit()
 
-def runAll() :
+def runAllCpp() :
+    compileSerial()
+    compileOMP()
+    compileCUDA
+
     # run the exe
     executeExe(f"{EXE_LOCATION}{SERIALEXE}")
     executeExe(f"{EXE_LOCATION}{OMPEXE}")
@@ -251,7 +263,7 @@ def readByLine(filePath) :
     with open(filePath, 'r') as file:
         return [line.strip() for line in file]
 
-def createRuntimeDF(platform, imName) :
+def createRuntimeDF(imName) :
     # dataframe 0,1,2,...,10, imageName, platform (col)
     columns = []
     
@@ -277,7 +289,7 @@ def createRuntimeDF(platform, imName) :
     
     return df
 
-def drawLineGraph(df, imName) :
+def drawRuntimeLineGraph(df, imName) :
     dfImage = df[df["imageName"] == imName]
     
     plt.figure(figsize=(9,6))
@@ -303,11 +315,54 @@ def drawLineGraph(df, imName) :
         yVal = dfMelted.loc[i, 'Y']
         plt.text(xVal+0.1, yVal, str(yVal), fontsize=8)
     
-    plt.title("Line Plot: Serial vs. OMP vs. CUDA Runtimes")
+    plt.title(f"Serial vs. OMP vs. CUDA Runtimes ({imName})")
     plt.xlabel("Column (1 to 10)")
     plt.ylabel("Time Used")
     plt.legend(title="Platform")
     plt.savefig(f'{imName}_runtime.png')
+
+def drawAverageRuntimeBarPlot(imName, result) : 
+    x = ["serial", "omp", "cuda"]
+
+    y = []
+
+    for p in x : 
+        y = y + result["avg"][f"{p}_{imName}"]
+    
+    plt.bar(x, y, color=['#7695FF', '#A2CA71', '#FF9874']) 
+    plt.title(f"Average Runtime ({imName})")
+    plt.xlabel("Platform")
+    plt.ylabel("Average Runtime (ms)")
+
+    for i, value in enumerate(y):
+        plt.text(i, value + max(y) * 0.01, f"{value:.5f}", ha='center')
+
+    plt.savefig(f'{imName}_avgruntime.png')
+
+def drawPerformanceGainBarPlot(result) : 
+    columns = ["imageName", "platform", "performanceGain"]
+
+    platHere = (platform.copy()).remove("serial")
+
+    # convert result to dataframe 
+    df = pd.DataFrame(columns=columns)
+    
+    i = 0
+    for p in platHere : 
+        for im in imName : 
+            df.loc[i] = [im, p, result["performanceGain"][f"{p}_{im}"]]
+            i += 1
+    
+    sns.barplot(x = 'platform',
+            y = 'performanceGain',
+            hue = 'imageName',
+            data = df,
+            estimator = np.median,
+            ci = 0)
+    
+    plt.title("Performance Gain : OMP vs. CUDA")
+    
+    plt.savefig(f'peformanceGain.png')
 
 def calculateAverage(filePath) :
     result = readByLine(filePath=filePath)
@@ -318,41 +373,62 @@ def calculateAverage(filePath) :
     # divide by N
     return math.ceil((total / N) * 10) / 10
 
-def calculateSpeedUp(numThreads) : 
+def calculateSpeedUp(numThreads, P) : 
     # calculate Serial 
-    
+    # S = 1 - P
+    S = 1 - P
+    return 1/(S + (P/numThreads))
 
 def resultGenerate() :
     # list of platform name and image Name
-    # platform = ["serial", "omp", "cuda"]
-    platform = ["serial", "omp"]
-    imName = ["lena", "wolf"]
     overall = "overall"
 
-    basePath = r"resource/outputForDisplay/"
+    outBasePath = r"resource/outputForDisplay/"
+    txtBasePath = r"resource/timetaken/"
 
     result = {}
+    result["avg"] = {}
+    result["performanceGain"] = {}
+    result["efficieny"] = {}
 
     for p in platform : 
         for im in imName : 
+            label = f"{p}_{im}"
+
             # calculate overall result first
-            timeOverallPath = f"{basePath}{p}_{im}_{overall}.txt"
-            avgOverall = calculateAverage(timeOverallPath)
-            result["average"][f"{p}_{m}_{overall}"] = avgOverall
+            timeOverallPath = f"{txtBasePath}{label}_{overall}.txt"
+            result["avg"][f"{label}_{overall}"] = calculateAverage(timeOverallPath)
 
-            timeParallelPath = f"{basePath}{p}_{im}.txt"
-            avgParallel = calculateAverage(timeOverallPath)
-            result["average"][f"{p}_{m}"] = avgParallel
-    
-    # speed up
+            timeParallelPath = f"{txtBasePath}{label}.txt"
+            result["avg"][f"{label}"] = calculateAverage(timeParallelPath)
 
+            # efficieny
+            result["efficieny"][f"{label}"] = result["speedup"][f"{label}"]/(NUM_THREADS_OMP if p == "omp" else NUM_THREADS_CUDA)
+
+    # performance gain
+    for p in platform.remove("serial") : 
+        for im in imName : 
+            result["performanceGain"][f"{p}_{im}"] = result["avg"][f"serial_{im}"] / result["avg"][f"{p}_{im}"]
 
     # store into json file 
-    with open(f"{basePath}performanceResult.json", "w") as file :
+    with open(f"{outBasePath}performanceResult.json", "w") as file :
         json.dump(result, file, indent=4)
+    
+    # draw graph 
+    for im in imName : 
+        # get dataframe 
+        df = createRuntimeDF(im)
+        drawRuntimeLineGraph(df, im)
 
+        # average 
+        drawAverageRuntimeBarPlot(im, result)
 
+    drawPerformanceGainBarPlot(result)
 
-if __name__ == "__main__" :
-    compileCUDA()
-    executeExe(f"{EXE_LOCATION}{CUDAEXE}")
+def main() : 
+    runAllCpp()
+    resultGenerate()
+
+# if __name__ == "__main__" :
+#     compileCUDA()
+#     executeExe(f"{EXE_LOCATION}{CUDAEXE}")
