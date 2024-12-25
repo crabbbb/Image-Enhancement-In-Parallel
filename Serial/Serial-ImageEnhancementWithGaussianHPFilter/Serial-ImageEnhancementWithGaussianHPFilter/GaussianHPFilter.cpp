@@ -2,8 +2,30 @@
 #include <complex>
 #include <iostream>
 #include "GaussianHPFilter.hpp"
+#include "Utils.hpp"
 
 using namespace std;
+
+// Shift frequency data so that the DC component is moved from (0,0) to (height/2, width/2).
+void fftShift2D(std::complex<double>** data, int width, int height)
+{
+    int h2 = height / 2;
+    int w2 = width / 2;
+
+    // Swap top-left with bottom-right
+    for (int u = 0; u < h2; ++u) {
+        for (int v = 0; v < w2; ++v) {
+            std::swap(data[u][v], data[u + h2][v + w2]);
+        }
+    }
+
+    // Swap top-right with bottom-left
+    for (int u = 0; u < h2; ++u) {
+        for (int v = w2; v < width; ++v) {
+            std::swap(data[u][v], data[u + h2][v - w2]);
+        }
+    }
+}
 
 // Function to compute Gaussian High-Pass Filter for a given pixel
 double computeHighPassValue(int u, int v, int height, int width, double cutoff_frequency) {
@@ -34,10 +56,7 @@ complex<double>** gaussianHighPassFilter(
     }
 
     // Create the output array G
-    complex<double>** G = new complex<double>*[height];
-    for (int i = 0; i < height; ++i) {
-        G[i] = new complex<double>[width];
-    }
+    complex<double>** G = allocate2DArray(height, width);
 
     // Step 2: Apply the filter
     for (int u = 0; u < height; ++u) {
@@ -56,19 +75,54 @@ complex<double>** gaussianHighPassFilter(
     return G;
 }
 
-bool testGaussianHighPassFilter() {
+// New function for unsharp masking
+complex<double>** unsharpMaskingFrequencyDomain(
+    complex<double>** F_unshifted, // Frequency data in "normal" layout (DC at top-left)
+    int width,
+    int height,
+    double cutoff_frequency,
+    double alpha)
+{
+    // Shift F so that DC is at the center (this is required for a radial Gaussian HP).
+    fftShift2D(F_unshifted, width, height);
+
+    // 1. Get high-pass filtered version of the input image in frequency domain
+    complex<double>** F_HP = gaussianHighPassFilter(F_unshifted, width, height, cutoff_frequency);
+
+    // 2. Create a new 2D array to store the unsharp masked result: 
+    //    F_sharp(u,v) = F(u,v) + alpha * F_HP(u,v)
+    complex<double>** F_sharp = allocate2DArray(height, width);
+
+    // 3. Combine original + scaled high-pass
+    for (int u = 0; u < height; ++u) {
+        for (int v = 0; v < width; ++v) {
+            F_sharp[u][v] = F_unshifted[u][v] + alpha * F_HP[u][v];
+        }
+    }
+
+    // Shift the result back so DC is at(0, 0) again
+    fftShift2D(F_sharp, width, height);
+
+    // 4. Clean up the HPF array if you want
+    cleanup2DArray(F_HP, height);
+
+    // Return the frequency-domain data of the sharpened image
+    return F_sharp;
+}
+
+bool testUnsharpMasking() {
     // Image dimensions
     const int width = 4;
     const int height = 4;
 
     // Cutoff frequency
-    double cutoff_frequency = 2.0;
+    double cutoff_frequency = 20.0;
+
+    // alpha
+    double alpha = 0.5;
 
     // Simulated frequency-domain data (4x4 matrix)
-    complex<double>** F_shifted = new complex<double>*[height];
-    for (int i = 0; i < height; ++i) {
-        F_shifted[i] = new complex<double>[width];
-    }
+    complex<double>** F_shifted = allocate2DArray(height, width);
 
     int value = 1;
     for (int u = 0; u < height; ++u) {
@@ -79,21 +133,20 @@ bool testGaussianHighPassFilter() {
     }
 
     // Expected output (manually calculated for this example)
-    complex<double>** expected = new complex<double>*[height];
-    for (int i = 0; i < height; ++i) {
-        expected[i] = new complex<double>[width];
-    }
+    complex<double>** expected = allocate2DArray(height, width);
+    complex<double>** F_HP_expected = allocate2DArray(height, width);
 
     for (int u = 0; u < height; ++u) {
         for (int v = 0; v < width; ++v) {
             double D_uv = sqrt(pow(u - height / 2.0, 2) + pow(v - width / 2.0, 2));
             double H_uv = 1.0 - exp(-pow(D_uv, 2) / (2 * pow(cutoff_frequency, 2)));
-            expected[u][v] = F_shifted[u][v] * H_uv;
+            F_HP_expected[u][v] = F_shifted[u][v] * H_uv;
+            expected[u][v] = F_shifted[u][v] + alpha * F_HP_expected[u][v];
         }
     }
 
-    // Call the Gaussian High-Pass Filter and get the output
-    complex<double>** G = gaussianHighPassFilter(F_shifted, width, height, cutoff_frequency);
+    // Call the unsharpMasking which will apply the gaussian filter to the original image and get the output
+    complex<double>** G = unsharpMaskingFrequencyDomain(F_shifted, width, height, cutoff_frequency, alpha);
 
     // Compare the output with the expected result
     bool test_passed = true;
@@ -115,10 +168,12 @@ bool testGaussianHighPassFilter() {
         delete[] F_shifted[i];
         delete[] G[i];
         delete[] expected[i];
+        delete[] F_HP_expected[i];
     }
     delete[] F_shifted;
     delete[] G;
     delete[] expected;
+    delete[] F_HP_expected;
 
     return test_passed;
 }
