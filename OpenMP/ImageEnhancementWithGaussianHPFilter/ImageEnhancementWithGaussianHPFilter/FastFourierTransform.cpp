@@ -95,14 +95,6 @@ complex<double>** convertUint8ToComplex2D(const uint8_t* image, int width, int h
     return out;
 }
 
-// Cleanup
-void cleanup2DArray(complex<double>** arr, int height) {
-    for (int i = 0; i < height; ++i) {
-        delete[] arr[i];
-    }
-    delete[] arr;
-}
-
 // Perform 2D FFT by doing 1D FFT on rows, then 1D FFT on columns.
 void FFT2D_inplace(complex<double>** data, int width, int height, int sign = +1)
 {

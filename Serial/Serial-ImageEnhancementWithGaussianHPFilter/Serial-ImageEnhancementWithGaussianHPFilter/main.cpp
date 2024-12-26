@@ -11,7 +11,7 @@
 
 using namespace std;
 
-const int N = 1;
+const int N = 10;
 const double CUTOFF_FREQUENCY = 100;
 const double ALPHA = 1.0;
 
@@ -81,27 +81,27 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 
     // save image 
     // ------------ this path is for using python execute ------------------------------
-    //cv::imwrite("resource/result/serial/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
-    //cv::imwrite("resource/result/serial/" + imName + "_fft.jpg", fromUint8ToMat(frequencyImage, width, height));
-    //cv::imwrite("resource/result/serial/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
+    cv::imwrite("resource/result/serial/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
+    cv::imwrite("resource/result/serial/" + imName + "_fft.jpg", fromUint8ToMat(frequencyImage, width, height));
+    cv::imwrite("resource/result/serial/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
     // ------------ this path is for using visual studio ------------------------------
-    cv::imwrite("../../../resource/result/serial/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
-    cv::imwrite("../../../resource/result/serial/" + imName + "_fft.jpg", fromUint8ToMat(frequencyImage, width, height));
-    cv::imwrite("../../../resource/result/serial/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
+    //cv::imwrite("../../../resource/result/serial/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
+    //cv::imwrite("../../../resource/result/serial/" + imName + "_fft.jpg", fromUint8ToMat(frequencyImage, width, height));
+    //cv::imwrite("../../../resource/result/serial/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
     // convert back
     cv::Mat out_img = fromUint8ToMat(spatialImage, width, height);
-    //cv::imwrite("resource/result/serial/" + imName + "_ifft.jpg", out_img);
-    cv::imwrite("../../../resource/result/serial/" + imName + "_ifft.jpg", out_img);
+    cv::imwrite("resource/result/serial/" + imName + "_ifft.jpg", out_img);
+    //cv::imwrite("../../../resource/result/serial/" + imName + "_ifft.jpg", out_img);
 
     return out_img;
 }
 
 int main(int argc, char* argv[])
 {
-    /*string image[] = { "lena.jpeg", "wolf.jpg" };*/
-    string image[] = { "doggo.jpg" };
+    string image[] = { "lena.jpeg", "wolf.jpg" };
+    //string image[] = { "wolf.jpg" };
 
     //string basePath = "resource/raw/";
     string basePath = "../../../resource/raw/";
