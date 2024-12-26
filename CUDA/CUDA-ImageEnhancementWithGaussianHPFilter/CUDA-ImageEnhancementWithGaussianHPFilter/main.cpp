@@ -45,7 +45,6 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 
     // Perform forward 2D FFT in-place
     cout << "Performing 2D FFT..." << endl;
-    printf("%d %d", paddedWidth, paddedHeight);
     cuDoubleComplex** fftResult = FFT2DParallel(padded_complex_image, paddedWidth, paddedHeight);
 
     // convert the fft complex to uint8_t with stop the timer 

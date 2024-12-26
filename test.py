@@ -220,6 +220,7 @@ def compileCUDA() :
         *cudaLibs,
         *opencvLibs,
         *sourceFiles,               # all the file want to compile
+        "-diag-suppress=611",
         "-o", f"{EXE_LOCATION}{CUDAEXE}"
     ]
 
