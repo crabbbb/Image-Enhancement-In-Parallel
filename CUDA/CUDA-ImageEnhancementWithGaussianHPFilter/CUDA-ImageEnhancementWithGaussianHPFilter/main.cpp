@@ -11,7 +11,7 @@
 
 using namespace std;
 
-const int N = 1;
+const int N = 10;
 const double CUTOFF_FREQUENCY = 100;
 const double ALPHA = 1.0;
 
@@ -91,19 +91,19 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 
     // save image 
     // ------------ this path is for using python execute ------------------------------
-    //cv::imwrite("resource/result/cuda/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
-    //cv::imwrite("resource/result/cuda/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
-    //cv::imwrite("resource/result/cuda/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
+    cv::imwrite("resource/result/cuda/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
+    cv::imwrite("resource/result/cuda/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
+    cv::imwrite("resource/result/cuda/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
     // ------------ this path is for using visual studio ------------------------------
-    cv::imwrite("../../../resource/result/cuda/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
-    cv::imwrite("../../../resource/result/cuda/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
-    cv::imwrite("../../../resource/result/cuda/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
+    //cv::imwrite("../../../resource/result/cuda/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
+    //cv::imwrite("../../../resource/result/cuda/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
+    //cv::imwrite("../../../resource/result/cuda/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
     // convert back
     cv::Mat out_img = fromUint8ToMat(ifftImage, width, height);
-    //cv::imwrite("resource/result/cuda/" + imName + "_ifft.jpg", out_img);
-    cv::imwrite("../../../resource/result/cuda/" + imName + "_ifft.jpg", out_img);
+    cv::imwrite("resource/result/cuda/" + imName + "_ifft.jpg", out_img);
+    //cv::imwrite("../../../resource/result/cuda/" + imName + "_ifft.jpg", out_img);
 
     // Cleanup original complexImage since we no longer need it
     cleanup2DArray(complex_image, height);
@@ -117,11 +117,10 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 
 int main(int argc, char* argv[])
 {
-    //string image[] = { "lena.jpeg", "wolf.jpg" };
-    string image[] = { "doggo.jpg", "bigimg.jpg", "cameragirl.jpeg", "lena.jpeg", "wolf.jpg" };
+    string image[] = { "doggo.jpg", "cameragirl.jpeg", "lena.jpeg", "wolf.jpg" };
 
-    //string basePath = "resource/raw/";
-    string basePath = "../../../resource/raw/";
+    string basePath = "resource/raw/";
+    //string basePath = "../../../resource/raw/";
 
     cv::Mat rgbImage;
     cv::Mat out;

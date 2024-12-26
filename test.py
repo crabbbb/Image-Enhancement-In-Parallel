@@ -175,15 +175,17 @@ def compileOMP() :
 
 def compileCUDA() : 
     # -------------------- change this to nvcc path -----------------
-    NVCC = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.0/bin/nvcc.exe"
+    NVCC = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/nvcc.exe"
 
     # CUDA paths
-    CUDA_INCLUDE = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.0/include"
-    CUDA_LIB_LOCATION = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.0/lib/x64"
+    CUDA_INCLUDE = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/include"
+    CUDA_LIB_LOCATION = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64"
 
     # opencv 
-    CUDA_OPEN_CV_INCLUDE = "C:/opencv-mingw/install/include"
-    CUDA_OPEN_CV_LIB_LOCATION = "C:/opencv-mingw/install/lib"
+    # CUDA_OPEN_CV_INCLUDE = "C:/opencv-mingw/install/include"
+    # CUDA_OPEN_CV_LIB_LOCATION = "C:/opencv-mingw/install/lib"
+    CUDA_OPEN_CV_INCLUDE = "C:/opencv/build/include"
+    CUDA_OPEN_CV_LIB_LOCATION = "C:/opencv/build/x64/vc16/lib"
 
     # library use 
     cudaLibs = [
@@ -191,20 +193,18 @@ def compileCUDA() :
     ]
 
     opencvLibs = [
-        "-lopencv_core4100",
-        "-lopencv_imgproc4100",
-        "-lopencv_highgui4100",
-        "-lopencv_imgcodecs4100",
+        "-lopencv_world4100",
     ]
 
     cudaBase = r"CUDA/CUDA-ImageEnhancementWithGaussianHPFilter/CUDA-ImageEnhancementWithGaussianHPFilter/"
 
     # all the file need to be compile together with main, because have include 
     sourceFiles = [
-        f"{cudaBase}CUDA-main.cpp", 
-        f"{cudaBase}CUDA-FastFourierTransform.cpp",
-        f"{cudaBase}CUDA-GaussianHPFilter.cpp",
-        f"{cudaBase}CUDA-Utils.cpp",
+        f"{cudaBase}main.cpp", 
+        f"{cudaBase}FastFourierTransform.cu",
+        f"{cudaBase}GaussianHPFilter.cu",
+        f"{cudaBase}Utils.cpp",
+        f"{cudaBase}convertGrayscale.cpp",
     ]
 
     # construct a command for g++ compiler 
@@ -213,10 +213,10 @@ def compileCUDA() :
         "-std=c++17",               # c++ version
         "-O2",
         "-arch=sm_75",              
-        f"-I{CUDA_OPEN_CV_INCLUDE}",       # the include file location of opencv
-        f"-I{CUDA_INCLUDE}",
-        f"-L{CUDA_OPEN_CV_LIB_LOCATION}",   # library location of opencv
-        f"-L{CUDA_LIB_LOCATION}",
+        f'-I"{CUDA_OPEN_CV_INCLUDE}"',       # the include file location of opencv
+        f'-I"{CUDA_INCLUDE}"',
+        f'-L"{CUDA_OPEN_CV_LIB_LOCATION}"',   # library location of opencv
+        f'-L"{CUDA_LIB_LOCATION}"',
         *cudaLibs,
         *opencvLibs,
         *sourceFiles,               # all the file want to compile
@@ -252,7 +252,7 @@ def compileCUDA() :
 def runAllCpp() :
     compileSerial()
     compileOMP()
-    compileCUDA
+    compileCUDA()
 
     # run the exe
     executeExe(f"{EXE_LOCATION}{SERIALEXE}")
@@ -426,6 +426,6 @@ def main() :
     runAllCpp()
     resultGenerate()
 
-# if __name__ == "__main__" :
-#     compileCUDA()
-#     executeExe(f"{EXE_LOCATION}{CUDAEXE}")
+if __name__ == "__main__" :
+    main()
+
