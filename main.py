@@ -167,7 +167,7 @@ def open_notebook_in_browser(ipynb_path, kernel_name):
 
 if __name__ == "__main__":
     # Paths to the known Python file and IPython notebook
-    python_file = "testing/testing.py"
+    python_file = "test.py"
     ipynb_file = "testing/testing.ipynb"
 
     # Add the current environment to Jupyter as a kernel

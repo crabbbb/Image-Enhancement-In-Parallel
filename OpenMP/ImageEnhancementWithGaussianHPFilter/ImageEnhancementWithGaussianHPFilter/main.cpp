@@ -93,30 +93,29 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 
     // save image 
     // ------------ this path is for using python execute ------------------------------
-    //cv::imwrite("resource/result/omp/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
-    //cv::imwrite("resource/result/omp/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
-    //cv::imwrite("resource/result/omp/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
+    cv::imwrite("resource/result/omp/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
+    cv::imwrite("resource/result/omp/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
+    cv::imwrite("resource/result/omp/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
     // ------------ this path is for using visual studio ------------------------------
-    cv::imwrite("../../../resource/result/omp/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
-    cv::imwrite("../../../resource/result/omp/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
-    cv::imwrite("../../../resource/result/omp/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
+    //cv::imwrite("../../../resource/result/omp/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
+    //cv::imwrite("../../../resource/result/omp/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
+    //cv::imwrite("../../../resource/result/omp/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
     // convert back
     cv::Mat out_img = fromUint8ToMat(ifftImage, width, height);
-    //cv::imwrite("resource/result/omp/" + imName + "_ifft.jpg", out_img);
-    cv::imwrite("../../../resource/result/omp/" + imName + "_ifft.jpg", out_img);
+    cv::imwrite("resource/result/omp/" + imName + "_ifft.jpg", out_img);
+    //cv::imwrite("../../../resource/result/omp/" + imName + "_ifft.jpg", out_img);
 
     return out_img;
 }
 
 int main(int argc, char* argv[])
 {
-    //string image[] = { "lena.jpeg", "wolf.jpg" };
-    string image[] = { "doggo.jpg" };
+    string image[] = { "doggo.jpg", "cameragirl.jpeg", "lena.jpeg", "wolf.jpg" };
 
-    //string basePath = "resource/raw/";
-    string basePath = "../../../resource/raw/";
+    string basePath = "resource/raw/";
+    //string basePath = "../../../resource/raw/";
 
     cv::Mat rgbImage;
     cv::Mat out;

@@ -357,31 +357,31 @@ cuDoubleComplex** IFFT2DParallel(cuDoubleComplex** freqData, int width, int heig
 // 8) Example test
 //    We'll test with a non-square array, e.g. width=6, height=4
 // =====================================================================
-static void printComplex2D(
-    cuDoubleComplex** arr,
-    int w, int h,
-    const char* msg,
-    bool showImag = false
-)
-{
-    std::cout << msg << ":\n";
-    for (int r = 0; r < h; r++) {
-        for (int c = 0; c < w; c++) {
-            double re = cuCreal(arr[r][c]);
-            double im = cuCimag(arr[r][c]);
-            if (!showImag) {
-                // Print real part only (to see if we got back original data)
-                std::cout << re << " ";
-            }
-            else {
-                // Full complex
-                std::cout << "(" << re << "," << im << ") ";
-            }
-        }
-        std::cout << "\n";
-    }
-    std::cout << std::endl;
-}
+//static void printComplex2D(
+//    cuDoubleComplex** arr,
+//    int w, int h,
+//    const char* msg,
+//    bool showImag = false
+//)
+//{
+//    std::cout << msg << ":\n";
+//    for (int r = 0; r < h; r++) {
+//        for (int c = 0; c < w; c++) {
+//            double re = cuCreal(arr[r][c]);
+//            double im = cuCimag(arr[r][c]);
+//            if (!showImag) {
+//                // Print real part only (to see if we got back original data)
+//                std::cout << re << " ";
+//            }
+//            else {
+//                // Full complex
+//                std::cout << "(" << re << "," << im << ") ";
+//            }
+//        }
+//        std::cout << "\n";
+//    }
+//    std::cout << std::endl;
+//}
 
 //int main()
 //{

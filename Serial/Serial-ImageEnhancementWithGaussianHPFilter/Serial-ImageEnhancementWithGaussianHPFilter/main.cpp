@@ -100,11 +100,10 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 
 int main(int argc, char* argv[])
 {
-    string image[] = { "lena.jpeg", "wolf.jpg" };
-    //string image[] = { "wolf.jpg" };
+    string image[] = { "doggo.jpg", "cameragirl.jpeg", "lena.jpeg", "wolf.jpg" };
 
-    //string basePath = "resource/raw/";
-    string basePath = "../../../resource/raw/";
+    string basePath = "resource/raw/";
+    //string basePath = "../../../resource/raw/";
 
     cv::Mat rgbImage;
     cv::Mat out;

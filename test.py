@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import math
 import json
+import numpy as np
 
 SERIALEXE = "serial.exe"
 OMPEXE = "omp.exe"
@@ -17,6 +18,10 @@ TXT_LOCATION = r"resource/timetaken/"
 # number of Loops 
 N = 10
 
+# numvber of threads
+NUM_THREADS_OMP = 8 
+NUM_THREADS_CUDA = 16 * 16
+
 # opencv path for MinGW 
 OPEN_CV_INCLUDE = r"C:/opencv-mingw/install/include"
 OPEN_LIB_LOCATION = r"C:/opencv-mingw/install/x64/mingw/lib"
@@ -25,6 +30,9 @@ OPEN_BIN_LOCATION = r"C:/opencv-mingw/install/x64/mingw/bin"
 # update path to let the system can find the needed opencv dll file from the location 
 newPath = OPEN_BIN_LOCATION + os.pathsep + os.environ["PATH"]
 os.environ["PATH"] = newPath
+
+platform = ["serial", "omp", "cuda"]
+imName = ["lena", "wolf"]
 
 def executeExe(exeLocation) : 
     runCmd = [f"{exeLocation}"]
@@ -167,15 +175,17 @@ def compileOMP() :
 
 def compileCUDA() : 
     # -------------------- change this to nvcc path -----------------
-    NVCC = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.0/bin/nvcc.exe"
+    NVCC = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/nvcc.exe"
 
     # CUDA paths
-    CUDA_INCLUDE = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.0/include"
-    CUDA_LIB_LOCATION = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.0/lib/x64"
+    CUDA_INCLUDE = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/include"
+    CUDA_LIB_LOCATION = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/lib/x64"
 
     # opencv 
-    CUDA_OPEN_CV_INCLUDE = "C:/opencv-mingw/install/include"
-    CUDA_OPEN_CV_LIB_LOCATION = "C:/opencv-mingw/install/lib"
+    # CUDA_OPEN_CV_INCLUDE = "C:/opencv-mingw/install/include"
+    # CUDA_OPEN_CV_LIB_LOCATION = "C:/opencv-mingw/install/lib"
+    CUDA_OPEN_CV_INCLUDE = "C:/opencv/build/include"
+    CUDA_OPEN_CV_LIB_LOCATION = "C:/opencv/build/x64/vc16/lib"
 
     # library use 
     cudaLibs = [
@@ -183,20 +193,18 @@ def compileCUDA() :
     ]
 
     opencvLibs = [
-        "-lopencv_core4100",
-        "-lopencv_imgproc4100",
-        "-lopencv_highgui4100",
-        "-lopencv_imgcodecs4100",
+        "-lopencv_world4100",
     ]
 
     cudaBase = r"CUDA/CUDA-ImageEnhancementWithGaussianHPFilter/CUDA-ImageEnhancementWithGaussianHPFilter/"
 
     # all the file need to be compile together with main, because have include 
     sourceFiles = [
-        f"{cudaBase}CUDA-main.cpp", 
-        f"{cudaBase}CUDA-FastFourierTransform.cpp",
-        f"{cudaBase}CUDA-GaussianHPFilter.cpp",
-        f"{cudaBase}CUDA-Utils.cpp",
+        f"{cudaBase}main.cpp", 
+        f"{cudaBase}FastFourierTransform.cu",
+        f"{cudaBase}GaussianHPFilter.cu",
+        f"{cudaBase}Utils.cpp",
+        f"{cudaBase}convertGrayscale.cpp",
     ]
 
     # construct a command for g++ compiler 
@@ -205,13 +213,14 @@ def compileCUDA() :
         "-std=c++17",               # c++ version
         "-O2",
         "-arch=sm_75",              
-        f"-I{CUDA_OPEN_CV_INCLUDE}",       # the include file location of opencv
-        f"-I{CUDA_INCLUDE}",
-        f"-L{CUDA_OPEN_CV_LIB_LOCATION}",   # library location of opencv
-        f"-L{CUDA_LIB_LOCATION}",
+        f'-I"{CUDA_OPEN_CV_INCLUDE}"',       # the include file location of opencv
+        f'-I"{CUDA_INCLUDE}"',
+        f'-L"{CUDA_OPEN_CV_LIB_LOCATION}"',   # library location of opencv
+        f'-L"{CUDA_LIB_LOCATION}"',
         *cudaLibs,
         *opencvLibs,
         *sourceFiles,               # all the file want to compile
+        "-diag-suppress=611",
         "-o", f"{EXE_LOCATION}{CUDAEXE}"
     ]
 
@@ -241,7 +250,11 @@ def compileCUDA() :
         print("Compiler error output : ", e.stderr)
         exit()
 
-def runAll() :
+def runAllCpp() :
+    compileSerial()
+    compileOMP()
+    compileCUDA()
+
     # run the exe
     executeExe(f"{EXE_LOCATION}{SERIALEXE}")
     executeExe(f"{EXE_LOCATION}{OMPEXE}")
@@ -251,7 +264,7 @@ def readByLine(filePath) :
     with open(filePath, 'r') as file:
         return [line.strip() for line in file]
 
-def createRuntimeDF(platform, imName) :
+def createRuntimeDF(imName) :
     # dataframe 0,1,2,...,10, imageName, platform (col)
     columns = []
     
@@ -277,7 +290,7 @@ def createRuntimeDF(platform, imName) :
     
     return df
 
-def drawLineGraph(df, imName) :
+def drawRuntimeLineGraph(df, imName, basePath) :
     dfImage = df[df["imageName"] == imName]
     
     plt.figure(figsize=(9,6))
@@ -303,11 +316,54 @@ def drawLineGraph(df, imName) :
         yVal = dfMelted.loc[i, 'Y']
         plt.text(xVal+0.1, yVal, str(yVal), fontsize=8)
     
-    plt.title("Line Plot: Serial vs. OMP vs. CUDA Runtimes")
+    plt.title(f"Serial vs. OMP vs. CUDA Runtimes ({imName})")
     plt.xlabel("Column (1 to 10)")
     plt.ylabel("Time Used")
     plt.legend(title="Platform")
-    plt.savefig(f'{imName}_runtime.png')
+    plt.savefig(f'{basePath}{imName}_runtime.png')
+
+def drawAverageRuntimeBarPlot(imName, result, basePath) : 
+    x = ["serial", "omp", "cuda"]
+
+    y = []
+
+    for p in x : 
+        y = y + result["avg"][f"{p}_{imName}"]
+    
+    plt.bar(x, y, color=['#7695FF', '#A2CA71', '#FF9874']) 
+    plt.title(f"Average Runtime ({imName})")
+    plt.xlabel("Platform")
+    plt.ylabel("Average Runtime (ms)")
+
+    for i, value in enumerate(y):
+        plt.text(i, value + max(y) * 0.01, f"{value:.5f}", ha='center')
+
+    plt.savefig(f'{basePath}{imName}_avgruntime.png')
+
+def drawPerformanceGainBarPlot(result, basePath) : 
+    columns = ["imageName", "platform", "performanceGain"]
+
+    platHere = (platform.copy()).remove("serial")
+
+    # convert result to dataframe 
+    df = pd.DataFrame(columns=columns)
+    
+    i = 0
+    for p in platHere : 
+        for im in imName : 
+            df.loc[i] = [im, p, result["performanceGain"][f"{p}_{im}"]]
+            i += 1
+    
+    sns.barplot(x = 'platform',
+            y = 'performanceGain',
+            hue = 'imageName',
+            data = df,
+            estimator = np.median,
+            ci = 0)
+    
+    plt.title("Performance Gain : OMP vs. CUDA")
+    
+    plt.savefig(f'{basePath}peformanceGain.png')
 
 def calculateAverage(filePath) :
     result = readByLine(filePath=filePath)
@@ -318,41 +374,59 @@ def calculateAverage(filePath) :
     # divide by N
     return math.ceil((total / N) * 10) / 10
 
-def calculateSpeedUp(numThreads) : 
+def calculateSpeedUp(numThreads, P) : 
     # calculate Serial 
-    
+    # S = 1 - P
+    S = 1 - P
+    return 1/(S + (P/numThreads))
 
 def resultGenerate() :
     # list of platform name and image Name
-    # platform = ["serial", "omp", "cuda"]
-    platform = ["serial", "omp"]
-    imName = ["lena", "wolf"]
     overall = "overall"
 
-    basePath = r"resource/outputForDisplay/"
+    outBasePath = r"resource/outputForDisplay/"
+    txtBasePath = r"resource/timetaken/"
 
     result = {}
+    result["avg"] = {}
+    result["performanceGain"] = {}
+    result["efficieny"] = {}
 
     for p in platform : 
         for im in imName : 
-            # calculate overall result first
-            timeOverallPath = f"{basePath}{p}_{im}_{overall}.txt"
-            avgOverall = calculateAverage(timeOverallPath)
-            result["average"][f"{p}_{m}_{overall}"] = avgOverall
+            label = f"{p}_{im}"
 
-            timeParallelPath = f"{basePath}{p}_{im}.txt"
-            avgParallel = calculateAverage(timeOverallPath)
-            result["average"][f"{p}_{m}"] = avgParallel
+            timeParallelPath = f"{txtBasePath}{label}.txt"
+            result["avg"][f"{label}"] = calculateAverage(timeParallelPath)
     
-    # speed up
+    # performance gain and efficiency
+    for p in platform : 
+        for im in imName : 
+            if p != "serial" :
+                result["performanceGain"][f"{p}_{im}"] = result["avg"][f"serial_{im}"] / result["avg"][f"{p}_{im}"]
 
+            # efficieny
+            result["efficieny"][f"{label}"] = result["speedup"][f"{label}"]/(NUM_THREADS_OMP if p == "omp" else NUM_THREADS_CUDA)
 
     # store into json file 
-    with open(f"{basePath}performanceResult.json", "w") as file :
+    with open(f"{outBasePath}performanceResult.json", "w") as file :
         json.dump(result, file, indent=4)
+    
+    # draw graph 
+    for im in imName : 
+        # get dataframe 
+        df = createRuntimeDF(im)
+        drawRuntimeLineGraph(df, im, outBasePath)
 
+        # average 
+        drawAverageRuntimeBarPlot(im, result, outBasePath)
 
+    drawPerformanceGainBarPlot(result, outBasePath)
+
+def main() : 
+    runAllCpp()
+    resultGenerate()
 
 if __name__ == "__main__" :
-    compileCUDA()
-    executeExe(f"{EXE_LOCATION}{CUDAEXE}")
+    main()
+
