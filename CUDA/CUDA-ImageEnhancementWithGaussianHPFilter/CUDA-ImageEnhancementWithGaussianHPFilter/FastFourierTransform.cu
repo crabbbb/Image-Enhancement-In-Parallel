@@ -45,7 +45,7 @@ __global__ void BitReverseRowKernel(
     cuDoubleComplex* d_data,
     int length,       // how many elements per row transform
     int batchCount,   // how many rows/batches
-    int log2Len       // log2(length)
+    int log2Len       // log2(length) (number of bits in each element)
 )
 {
     int batch = blockIdx.y;  // which row/batch
@@ -53,9 +53,10 @@ __global__ void BitReverseRowKernel(
 
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < length) {
-        // bit-reverse 'tid' within [0, length)
+        // bit-reverse 'tid' in the range 0 to length - 1
         int x = tid;
         int r = 0;
+        // process log2Len bits, after the loop, reversed bits of the current index is assigned to r.
         for (int i = 0; i < log2Len; i++) {
             r = (r << 1) | (x & 1);
             x >>= 1;
@@ -161,10 +162,13 @@ static void BatchFFT_1D(
 )
 {
     // 1) bit-reversal
+    // calculates the number of bits needed for the bit-reversal based on the length
+    // mathematical equivalent = ceil(log2(length))
     int log2Len = 0;
     while ((1 << log2Len) < length) log2Len++;
 
     dim3 block(256, 1);
+    // ensure enough blocks to cover the length, batches is to run all the row processing in parallel
     dim3 grid((length + block.x - 1) / block.x, batches);
 
     BitReverseRowKernel << <grid, block >> > (d_data, length, batches, log2Len);
@@ -175,6 +179,7 @@ static void BatchFFT_1D(
 
     for (int halfSize = 1; halfSize < length; halfSize *= 2) {
         int totalButterflies = length / 2;
+        // ensure enough blocks to cover totalButterflies
         dim3 gridBfly((totalButterflies + block.x - 1) / block.x, batches);
         CooleyTukeyRowKernel << <gridBfly, block >> > (d_data, length, batches, halfSize, sign);
         CHECK_CUDA_ERR("CooleyTukeyRowKernel");
@@ -182,6 +187,7 @@ static void BatchFFT_1D(
 
     // 3) scale if inverse
     if (!forward) {
+        // ensure enough blocks to cover the length
         dim3 gridScale((length + block.x - 1) / block.x, batches);
         double scaleFactor = 1.0 / (double)length;
         ScaleRowKernel << <gridScale, block >> > (d_data, length, batches, scaleFactor);
