@@ -32,7 +32,7 @@ newPath = OPEN_BIN_LOCATION + os.pathsep + os.environ["PATH"]
 os.environ["PATH"] = newPath
 
 platform = ["serial", "omp", "cuda"]
-imName = ["lena", "wolf"]
+imName = [ "doggo", "cameragirl", "lena", "wolf" ]
 
 def executeExe(exeLocation) : 
     runCmd = [f"{exeLocation}"]
@@ -210,17 +210,17 @@ def compileCUDA() :
     # construct a command for g++ compiler 
     compileCmd = [
         NVCC, 
-        "-std=c++17",               # c++ version
-        "-O2",
-        "-arch=sm_75",              
-        f'-I"{CUDA_OPEN_CV_INCLUDE}"',       # the include file location of opencv
+        "-std=c++17",                         # c++ version
+        "-O2",                                # optimize
+        "-arch=sm_75",                        # nvcc architecture 
+        f'-I"{CUDA_OPEN_CV_INCLUDE}"',        # the include file location of opencv
         f'-I"{CUDA_INCLUDE}"',
         f'-L"{CUDA_OPEN_CV_LIB_LOCATION}"',   # library location of opencv
         f'-L"{CUDA_LIB_LOCATION}"',
         *cudaLibs,
         *opencvLibs,
-        *sourceFiles,               # all the file want to compile
-        "-diag-suppress=611",
+        *sourceFiles,                         # all the file want to compile
+        "-diag-suppress=611",                 # ignore warning
         "-o", f"{EXE_LOCATION}{CUDAEXE}"
     ]
 
@@ -260,11 +260,12 @@ def runAllCpp() :
     executeExe(f"{EXE_LOCATION}{OMPEXE}")
     executeExe(f"{EXE_LOCATION}{CUDAEXE}")
 
-def readByLine(filePath) :
-    with open(filePath, 'r') as file:
-        return [line.strip() for line in file]
 
-def createRuntimeDF(imName) :
+def readByLineInt(filePath) :
+    with open(filePath, "r") as file :
+        return [int(line.strip()) for line in file]
+
+def createRuntimeDF(imageName) :
     # dataframe 0,1,2,...,10, imageName, platform (col)
     columns = []
     
@@ -280,93 +281,153 @@ def createRuntimeDF(imName) :
     # read data from txt file 
     i = 0
     for p in platform :
-        for im in imName :
-            # get txt fileName
-            filePath = f"{TXT_LOCATION}{p}_{im}.txt"
+        # get txt fileName
+        filePath = f"{TXT_LOCATION}{p}_{imageName}.txt"
 
-            # read all the data add into dataframe 
-            df.loc[i] = readByLine(filePath) + [im, p]
-            i += 1
+        # read all the data add into dataframe 
+        df.loc[i] = readByLineInt(filePath) + [imageName, p]
+        i += 1
     
     return df
 
-def drawRuntimeLineGraph(df, imName, basePath) :
-    dfImage = df[df["imageName"] == imName]
-    
-    plt.figure(figsize=(9,6))
-    
+def drawRuntimeLineGraph(df, imageName, basePath) :
     # melt the dataframe so columns 1 - 10 become a single 'X' col, time usage go into 'Y'
-    dfMelted = dfImage.melt(
+    df_melted = df.melt(
         id_vars=['imageName', 'platform'],
-        var_name='X',          # was 1 - 10
+        var_name='X',          # was "1","2","3" etc.
         value_name='Y'         # time usage
     )
-    
+
+    plt.figure()
+    plt.figure(figsize=(9,6))
     sns.lineplot(
-        data=dfMelted,
+        data=df_melted,
         x='X',
         y='Y',
         hue='platform',
         marker='o'
     )
-
     # Optionally label points
-    for i in range(len(dfMelted)):
-        xVal = dfMelted.loc[i, 'X']
-        yVal = dfMelted.loc[i, 'Y']
-        plt.text(xVal+0.1, yVal, str(yVal), fontsize=8)
+    for i in range(len(df_melted)):
+        x_val = df_melted.loc[i, 'X']
+        y_val = df_melted.loc[i, 'Y']
+        plt.text(x_val+0.1, y_val, str(y_val), fontsize=8)
     
-    plt.title(f"Serial vs. OMP vs. CUDA Runtimes ({imName})")
+    plt.title(f"Serial vs. OMP vs. CUDA Runtimes ({imageName})")
     plt.xlabel("Column (1 to 10)")
     plt.ylabel("Time Used")
     plt.legend(title="Platform")
-    plt.savefig(f'{basePath}{imName}_runtime.png')
+    plt.savefig(f'{basePath}{imageName}_runtime.png')
 
-def drawAverageRuntimeBarPlot(imName, result, basePath) : 
+def drawAverageRuntimeBarPlot(imageName, result, basePath) : 
     x = ["serial", "omp", "cuda"]
 
     y = []
 
     for p in x : 
-        y = y + result["avg"][f"{p}_{imName}"]
+        y = y + [result["avg"][f"{p}_{imageName}"]]
     
+    plt.figure()
     plt.bar(x, y, color=['#7695FF', '#A2CA71', '#FF9874']) 
-    plt.title(f"Average Runtime ({imName})")
+    plt.title(f"Average Runtime ({imageName})")
     plt.xlabel("Platform")
     plt.ylabel("Average Runtime (ms)")
 
     for i, value in enumerate(y):
         plt.text(i, value + max(y) * 0.01, f"{value:.5f}", ha='center')
 
-    plt.savefig(f'{basePath}{imName}_avgruntime.png')
+    plt.savefig(f'{basePath}{imageName}_avgruntime.png')
 
 def drawPerformanceGainBarPlot(result, basePath) : 
     columns = ["imageName", "platform", "performanceGain"]
 
-    platHere = (platform.copy()).remove("serial")
+    parallelPlatform = platform.copy()
+    parallelPlatform.remove("serial")
 
     # convert result to dataframe 
     df = pd.DataFrame(columns=columns)
     
     i = 0
-    for p in platHere : 
+    for p in parallelPlatform : 
         for im in imName : 
             df.loc[i] = [im, p, result["performanceGain"][f"{p}_{im}"]]
             i += 1
     
-    sns.barplot(x = 'platform',
+    plt.figure()
+    ax = sns.barplot(x = 'platform',
             y = 'performanceGain',
             hue = 'imageName',
             data = df,
-            estimator = np.median,
-            ci = 0)
+            estimator = np.median)
+    
+    # annotate y axis value
+    for bar in ax.patches:
+        # get height of each bar
+        height = bar.get_height()  
+
+        # value 0 and NaN cant be plot
+        if not np.isnan(height) and height > 0 : 
+            ax.text(
+                # center of the bar at x axis
+                bar.get_x() + bar.get_width() / 2,  
+                height,  
+                f'{height:.3f}',  
+                # horizontal alignment
+                ha='center',  
+                # vertical alignment
+                va='bottom'   
+            )
     
     plt.title("Performance Gain : OMP vs. CUDA")
     
     plt.savefig(f'{basePath}peformanceGain.png')
 
+def drawEfficiencyBarPlot(result, basePath) : 
+    columns = ["imageName", "platform", "efficiency"]
+
+    parallelPlatform = platform.copy()
+    parallelPlatform.remove("serial")
+
+    # convert result to dataframe 
+    df = pd.DataFrame(columns=columns)
+    
+    i = 0
+    for p in parallelPlatform : 
+        for im in imName : 
+            df.loc[i] = [im, p, result["efficiency"][f"{p}_{im}"]]
+            i += 1
+    
+    plt.figure()
+    ax = sns.barplot(x = 'platform',
+            y = 'efficiency',
+            hue = 'imageName',
+            data = df,
+            estimator = np.median)
+    
+    # annotate y axis value
+    for bar in ax.patches:
+        # get height of each bar
+        height = bar.get_height()  
+
+        # value 0 and NaN cant be plot
+        if not np.isnan(height) and height > 0 : 
+            ax.text(
+                # center of the bar at x axis
+                bar.get_x() + bar.get_width() / 2,  
+                height,  
+                f'{height:.3f}',  
+                # horizontal alignment
+                ha='center',  
+                # vertical alignment
+                va='bottom'   
+            )
+    
+    plt.title("Efficiency : OMP vs. CUDA")
+    
+    plt.savefig(f'{basePath}efficiency.png')
+
 def calculateAverage(filePath) :
-    result = readByLine(filePath=filePath)
+    result = readByLineInt(filePath=filePath)
     total = 0
     for i in result : 
         total += int(i)
@@ -382,31 +443,29 @@ def calculateSpeedUp(numThreads, P) :
 
 def resultGenerate() :
     # list of platform name and image Name
-    overall = "overall"
-
     outBasePath = r"resource/outputForDisplay/"
     txtBasePath = r"resource/timetaken/"
 
     result = {}
     result["avg"] = {}
     result["performanceGain"] = {}
-    result["efficieny"] = {}
+    result["efficiency"] = {}
 
     for p in platform : 
         for im in imName : 
-            label = f"{p}_{im}"
-
-            timeParallelPath = f"{txtBasePath}{label}.txt"
-            result["avg"][f"{label}"] = calculateAverage(timeParallelPath)
+            timeParallelPath = f"{txtBasePath}{p}_{im}.txt"
+            result["avg"][f"{p}_{im}"] = calculateAverage(timeParallelPath)
     
     # performance gain and efficiency
-    for p in platform : 
+    parallelPlatform = platform.copy()
+    parallelPlatform.remove("serial")
+
+    for p in parallelPlatform : 
         for im in imName : 
-            if p != "serial" :
-                result["performanceGain"][f"{p}_{im}"] = result["avg"][f"serial_{im}"] / result["avg"][f"{p}_{im}"]
+            result["performanceGain"][f"{p}_{im}"] = result["avg"][f"serial_{im}"] / result["avg"][f"{p}_{im}"]
 
             # efficieny
-            result["efficieny"][f"{label}"] = result["speedup"][f"{label}"]/(NUM_THREADS_OMP if p == "omp" else NUM_THREADS_CUDA)
+            result["efficiency"][f"{p}_{im}"] = result["performanceGain"][f"{p}_{im}"]/(NUM_THREADS_OMP if p == "omp" else NUM_THREADS_CUDA)
 
     # store into json file 
     with open(f"{outBasePath}performanceResult.json", "w") as file :
@@ -416,15 +475,17 @@ def resultGenerate() :
     for im in imName : 
         # get dataframe 
         df = createRuntimeDF(im)
+        print(df)
         drawRuntimeLineGraph(df, im, outBasePath)
 
         # average 
         drawAverageRuntimeBarPlot(im, result, outBasePath)
 
     drawPerformanceGainBarPlot(result, outBasePath)
+    drawEfficiencyBarPlot(result, outBasePath)
 
 def main() : 
-    runAllCpp()
+    # runAllCpp()
     resultGenerate()
 
 if __name__ == "__main__" :
