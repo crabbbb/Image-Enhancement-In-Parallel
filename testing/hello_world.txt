@@ -1,1 +1,0 @@
-Hello, World! Testing write file, you should be able to read this message in the ipykernel.
