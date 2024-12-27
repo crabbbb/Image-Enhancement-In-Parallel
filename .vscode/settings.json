@@ -6,6 +6,7 @@
         "vector": "cpp",
         "ostream": "cpp",
         "xstring": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "chrono": "cpp"
     }
 }
