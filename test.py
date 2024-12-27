@@ -210,17 +210,17 @@ def compileCUDA() :
     # construct a command for g++ compiler 
     compileCmd = [
         NVCC, 
-        "-std=c++17",               # c++ version
-        "-O2",
-        "-arch=sm_75",              
-        f'-I"{CUDA_OPEN_CV_INCLUDE}"',       # the include file location of opencv
+        "-std=c++17",                         # c++ version
+        "-O2",                                # optimize
+        "-arch=sm_75",                        # nvcc architecture 
+        f'-I"{CUDA_OPEN_CV_INCLUDE}"',        # the include file location of opencv
         f'-I"{CUDA_INCLUDE}"',
         f'-L"{CUDA_OPEN_CV_LIB_LOCATION}"',   # library location of opencv
         f'-L"{CUDA_LIB_LOCATION}"',
         *cudaLibs,
         *opencvLibs,
-        *sourceFiles,               # all the file want to compile
-        "-diag-suppress=611",
+        *sourceFiles,                         # all the file want to compile
+        "-diag-suppress=611",                 # ignore warning
         "-o", f"{EXE_LOCATION}{CUDAEXE}"
     ]
 
