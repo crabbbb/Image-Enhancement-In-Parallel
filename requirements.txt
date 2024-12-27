@@ -4,10 +4,11 @@ jupyterlab
 nbconvert
 nbformat
 matplotlib
-# subprocess
 pandas
 seaborn
+numpy
+opencv-python
+# subprocess
 # math
 # json
-numpy
 # os

@@ -1,0 +1,36 @@
+{
+    "avg": {
+        "serial_doggo": 1163.0,
+        "serial_cameragirl": 21689.8,
+        "serial_lena": 122.7,
+        "serial_wolf": 10497.8,
+        "omp_doggo": 103.7,
+        "omp_cameragirl": 1563.9,
+        "omp_lena": 12.2,
+        "omp_wolf": 805.4,
+        "cuda_doggo": 51.4,
+        "cuda_cameragirl": 597.2,
+        "cuda_lena": 5.5,
+        "cuda_wolf": 307.1
+    },
+    "performanceGain": {
+        "omp_doggo": 11.215043394406942,
+        "omp_cameragirl": 13.869045335379498,
+        "omp_lena": 10.057377049180328,
+        "omp_wolf": 13.034268686367023,
+        "cuda_doggo": 22.626459143968873,
+        "cuda_cameragirl": 36.319156061620895,
+        "cuda_lena": 22.30909090909091,
+        "cuda_wolf": 34.18365353305112
+    },
+    "efficiency": {
+        "omp_doggo": 1.4018804243008678,
+        "omp_cameragirl": 1.7336306669224373,
+        "omp_lena": 1.257172131147541,
+        "omp_wolf": 1.6292835857958778,
+        "cuda_doggo": 0.08838460603112841,
+        "cuda_cameragirl": 0.14187170336570662,
+        "cuda_lena": 0.08714488636363636,
+        "cuda_wolf": 0.13352989661348094
+    }
+}
