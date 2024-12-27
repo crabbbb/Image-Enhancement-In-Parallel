@@ -27,15 +27,19 @@ void FFT1D_iterative(complex<double>* x, int n, int sign = +1)
         log2n++;
     }
 
-    // Bit-reverse the indices
+    // Bit-reverse the indices to re-arrange the sequence 
     for (int i = 0; i < n; ++i) {
         // Reverse bits of i
+        // using unsigned to only store the 0 or positive value 
         unsigned int reversed = 0;
         unsigned int temp = i;
+
+        // to get the location
         for (int b = 0; b < log2n; ++b) {
             reversed = (reversed << 1) | (temp & 1);
             temp >>= 1;
         }
+
         if (static_cast<int>(reversed) > i) {
             swap(x[i], x[reversed]);
         }
@@ -49,7 +53,7 @@ void FFT1D_iterative(complex<double>* x, int n, int sign = +1)
 
         // Precompute the "step" twiddle (a single primitive root of unity)
         double theta = sign * (-2.0 * M_PI / m);
-        complex<double> wm(cos(theta), sin(theta));
+        complex<double> wm(cos(theta), sin(theta)); 
 
         // We apply the butterfly from k=0 in strides of m
         // This is the main loop that you can parallelize if it is large enough
