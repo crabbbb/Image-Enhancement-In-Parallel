@@ -19,7 +19,7 @@ TXT_LOCATION = r"resource/timetaken/"
 N = 10
 
 # numvber of threads
-NUM_THREADS_OMP = 8 
+NUM_THREADS_OMP = 16 
 NUM_THREADS_CUDA = 16 * 16
 
 # opencv path for MinGW 
