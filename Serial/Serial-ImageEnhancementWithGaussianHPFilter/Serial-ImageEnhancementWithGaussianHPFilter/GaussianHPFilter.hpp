@@ -19,7 +19,7 @@ complex<double>** gaussianHighPassFilter(
     double cutoff_frequency);
 
 complex<double>** unsharpMaskingFrequencyDomain(
-    complex<double>** F_shifted,
+    complex<double>** F_unshifted, // Frequency data in "normal" layout (DC at top-left)
     int width,
     int height,
     double cutoff_frequency,

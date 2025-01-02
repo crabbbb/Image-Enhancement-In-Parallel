@@ -10,7 +10,7 @@ using namespace std;
 void FFT1D(complex<double>* x, int size);
 
 // Perform 2D FFT by applying 1D FFT row-wise and column-wise
-complex<double>** FFT2D(complex<double>** image, int width, int height);
+complex<double>** FFT2D(const uint8_t* image, int width, int height);
 
 // Test function for FFT2D
 bool testFFT2D();

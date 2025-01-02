@@ -3,6 +3,6 @@
 
 using namespace std;
 
-complex<double>* IFFT1D(std::complex<double>* x, int size);
-complex<double>** IFFT2D(std::complex<double>** image, int width, int height);
+complex<double>* IFFT1D(complex<double>* x, int size);
+uint8_t* IFFT2D(complex<double>** image, int width, int height);
 bool testIFFT2D();
