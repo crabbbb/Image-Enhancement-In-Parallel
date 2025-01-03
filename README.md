@@ -77,11 +77,11 @@ Below is the test run results after runnning the test run script with cutoff fre
 <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 50px;">
   <div style="">
     <p>Before:</p>
-    <img src="unnamed_cropped.jpg" alt="Before" width="300">
+    <img src="readmeImage/unnamed_cropped.jpg" alt="Before" width="300">
   </div>
   <div style="">
     <p>After:</p>
-    <img src="unnamedmerged_result_cropped.jpg" alt="After" width="300">
+    <img src="readmeImage/unnamedmerged_result_cropped.jpg" alt="After" width="300">
   </div>
 </div>
 
