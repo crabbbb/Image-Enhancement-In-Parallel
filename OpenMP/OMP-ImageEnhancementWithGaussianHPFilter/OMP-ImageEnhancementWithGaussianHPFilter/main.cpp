@@ -16,14 +16,12 @@ const double CUTOFF_FREQUENCY = 100;
 const double ALPHA = 1.0;
 
 // all the processing done here 
-cv::Mat startProcessing(cv::Mat& in_img, string imName, string color) {
+cv::Mat startProcessing(cv::Mat& in_img, string imName, int cutoff_frequency, double alpha) {
 
     // get width and height 
     int width = in_img.cols;
     int height = in_img.rows;
 
-    // convert image to grayscale 
-    //uint8_t* channelImage = rgb_to_grayscale(in_img.data, width, height);
     uint8_t* channelImage = in_img.data;
 
     // start time 
@@ -53,7 +51,7 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName, string color) {
 
     // apply Gaussian High-Pass Filter
     cout << "Applying unsharp masking with Gaussian High-Pass Filter..." << endl;
-    complex<double>** filteredResult = unsharpMaskingFrequencyDomain(fft_results, paddedWidth, paddedHeight, CUTOFF_FREQUENCY, ALPHA);
+    complex<double>** filteredResult = unsharpMaskingFrequencyDomain(fft_results, paddedWidth, paddedHeight, cutoff_frequency, alpha);
 
     // convert the gaussian complex to uint8_t with stop the timer 
     auto gaussianConvertStart = chrono::high_resolution_clock::now();
@@ -88,7 +86,7 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName, string color) {
 
     // save image 
     // ------------ this path is for using python execute ------------------------------
-    //cv::imwrite("resource/result/omp/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
+    //cv::imwrite("resource/result/omp/" + imName + "_gray.jpg", fromUint8ToMat(channelImage, width, height));
     //cv::imwrite("resource/result/omp/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
     //cv::imwrite("resource/result/omp/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
@@ -105,10 +103,54 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName, string color) {
     return out_img;
 }
 
-int main(int argc, char* argv[])
+// will process multiple color channel with the passing argument 
+void processRGB(int cutoff_frequency, double alpha, string file_path)  
+{
+    cv::Mat rgbImage;
+    cv::Mat out;
+
+    string imName = filesystem::path(file_path).stem().string();
+
+    rgbImage = cv::imread(file_path);
+
+    vector<cv::Mat> bgrChannels;
+    cv::split(rgbImage, bgrChannels);
+
+    // Resize the output to hold the same number of channels (usually 3 for BGR)
+    vector<cv::Mat> output(bgrChannels.size());
+
+    // Process each channel separately.
+    for (int c = 0; c < rgbImage.channels(); c++) {
+
+        string color = "";
+        switch (c) {
+        case 0:
+            color = "blue";
+            break;
+        case 1:
+            color = "green";
+            break;
+        case 2:
+            color = "red";
+            break;
+        }
+
+        cv::Mat processedChannel = startProcessing(bgrChannels[c], imName, cutoff_frequency, alpha);
+
+        cv::imwrite("../../../resource/result/omp/" + imName + "channel_" + color + ".jpg", processedChannel);
+
+        bgrChannels[c] = processedChannel;
+    }
+
+    cv::Mat mergedResult;
+    cv::merge(bgrChannels, mergedResult);
+    cv::imwrite("../../../resource/result/omp/" + imName + "merged_result.jpg", mergedResult);
+}
+
+void processSingleImChannel()
 {
     //string image[] = { "doggo.jpg", "cameragirl.jpeg", "lena.jpeg", "wolf.jpg" };
-    string image[] = { "lena.jpeg" };
+    string image[] = { "cameragirl.jpeg" };
 
     //string basePath = "resource/raw/";
     string basePath = "../../../resource/raw/";
@@ -123,42 +165,9 @@ int main(int argc, char* argv[])
 
         for (int i = 0; i < N; i++) {
             rgbImage = cv::imread(completePath);
-
-            vector<cv::Mat> bgrChannels;
-            cv::split(rgbImage, bgrChannels);
-
-            // Resize the output to hold the same number of channels (usually 3 for BGR)
-            vector<cv::Mat> output(bgrChannels.size());
-
-            // Process each channel separately.
-            for (int c = 0; c < rgbImage.channels(); c++) {                
-
-                string color = "";
-                switch (c) {
-                case 0: 
-                    color = "blue";
-                    break;
-                case 1: 
-                    color = "green";
-                    break;
-                case 2: 
-                    color = "red";
-                    break;
-                }
-
-                cv::Mat processedChannel = startProcessing(bgrChannels[c], imName, color);
-
-                cv::imwrite("../../../resource/result/omp/" + imName + "channel_" + color + ".jpg", processedChannel);
-
-                bgrChannels[c] = processedChannel;
-            }
-
-            cv::Mat mergedResult;
-            cv::merge(bgrChannels, mergedResult);
-            cv::imwrite("../../../resource/result/omp/" + imName + "merged_result.jpg", mergedResult);
+            out = startProcessing(rgbImage, imName, CUTOFF_FREQUENCY, ALPHA);
         }
     }
-    
 
     //cv::Mat oriResize;
     //cv::resize(rgbImage, oriResize, cv::Size(600, 600));
@@ -168,6 +177,14 @@ int main(int argc, char* argv[])
     //cv::resize(out, resultResize, cv::Size(600, 600));
     //cv::imshow("Result", resultResize);
     //cv::waitKey(0);
+}
+
+int main(int argc, char* argv[])
+{
+    
+    
+
+    
 
     return 0;
 }

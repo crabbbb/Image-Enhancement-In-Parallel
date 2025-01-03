@@ -22,8 +22,7 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
     int width = in_img.cols;
     int height = in_img.rows;
 
-    // convert image to grayscale 
-    uint8_t* grayscaleImage = rgb_to_grayscale(in_img.data, width, height);
+    uint8_t* channelImage = in_img.data;
 
     // start time 
     auto start = chrono::high_resolution_clock::now();
@@ -31,7 +30,7 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
     // Zero-pad the image to power-of-two dimensions
     int paddedWidth, paddedHeight;
     uint8_t* padded_image = zeroPad2D(
-        grayscaleImage,  // original data
+        channelImage,  // original data
         width,          // old width
         height,         // old height
         paddedWidth,       // [out] new width
@@ -85,12 +84,12 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 
     // save image 
     // ------------ this path is for using python execute ------------------------------
-    cv::imwrite("resource/result/cuda/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
+    cv::imwrite("resource/result/cuda/" + imName + "_gray.jpg", fromUint8ToMat(channelImage, width, height));
     cv::imwrite("resource/result/cuda/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
     cv::imwrite("resource/result/cuda/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
     // ------------ this path is for using visual studio ------------------------------
-    //cv::imwrite("../../../resource/result/cuda/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
+    //cv::imwrite("../../../resource/result/cuda/" + imName + "_gray.jpg", fromUint8ToMat(channelImage, width, height));
     //cv::imwrite("../../../resource/result/cuda/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
     //cv::imwrite("../../../resource/result/cuda/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
@@ -172,25 +171,64 @@ void processArguments(int argc, char* argv[]) {
 
     if (valid_cutoff_frequency && valid_alpha && valid_file) {
         cout << "All inputs are valid. Proceeding with processing..." << endl;
-        // Add your processing logic here
+        processRGB(cutoff_frequency, alpha, file_path);
     }
     else {
         cout << "Usage: exe_file_to_execute -single [cutoff frequency] [alpha] [image file path]" << endl;
     }
 }
 
-int main(int argc, char* argv[])
+// will process multiple color channel with the passing argument 
+void processRGB(int cutoff_frequency, double alpha, string file_path)  
 {
-    if (argc > 1 && strcmp(argv[1], "-single") == 0) {
-        processArguments(argc, argv);
-        return 0;
+    cv::Mat rgbImage;
+    cv::Mat out;
+
+    string imName = filesystem::path(file_path).stem().string();
+
+    rgbImage = cv::imread(file_path);
+
+    vector<cv::Mat> bgrChannels;
+    cv::split(rgbImage, bgrChannels);
+
+    // Resize the output to hold the same number of channels (usually 3 for BGR)
+    vector<cv::Mat> output(bgrChannels.size());
+
+    // Process each channel separately.
+    for (int c = 0; c < rgbImage.channels(); c++) {
+
+        string color = "";
+        switch (c) {
+        case 0:
+            color = "blue";
+            break;
+        case 1:
+            color = "green";
+            break;
+        case 2:
+            color = "red";
+            break;
+        }
+
+        cv::Mat processedChannel = startProcessing(bgrChannels[c], imName, cutoff_frequency, alpha);
+
+        cv::imwrite("../../../resource/result/cuda/" + imName + "channel_" + color + ".jpg", processedChannel);
+
+        bgrChannels[c] = processedChannel;
     }
 
+    cv::Mat mergedResult;
+    cv::merge(bgrChannels, mergedResult);
+    cv::imwrite("../../../resource/result/cuda/" + imName + "merged_result.jpg", mergedResult);
+}
+
+void processGreyscale()
+{
     string image[] = { "doggo.jpg", "cameragirl.jpeg", "lena.jpeg", "wolf.jpg" };
-    //string image[] = { "cameragirl.jpeg" };
+    // string image[] = { "cameragirl.jpeg" };
 
     string basePath = "resource/raw/";
-    //string basePath = "../../../resource/raw/";
+    // string basePath = "../../../resource/raw/";
 
     cv::Mat rgbImage;
     cv::Mat out;
@@ -202,10 +240,9 @@ int main(int argc, char* argv[])
 
         for (int i = 0; i < N; i++) {
             rgbImage = cv::imread(completePath);
-            out = startProcessing(rgbImage, imName);
+            out = startProcessing(rgbImage, imName, CUTOFF_FREQUENCY, ALPHA);
         }
     }
-
 
     //cv::Mat oriResize;
     //cv::resize(rgbImage, oriResize, cv::Size(600, 600));
@@ -215,6 +252,16 @@ int main(int argc, char* argv[])
     //cv::resize(out, resultResize, cv::Size(600, 600));
     //cv::imshow("Result", resultResize);
     //cv::waitKey(0);
+}
+
+int main(int argc, char* argv[])
+{
+    if (argc > 1 && strcmp(argv[1], "-single") == 0) {
+        processArguments(argc, argv);
+        return 0;
+    }
+
+    processGreyscale();
 
     return 0;
 }
