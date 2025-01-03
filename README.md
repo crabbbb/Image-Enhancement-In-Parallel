@@ -68,7 +68,22 @@ You can run the compiled file using the following steps:
    You can see the result in the `./resource/result/CUDA` folder
 
 > **NOTE** : <br>
-> If you want to only look at the RGB output, look for the file name
+> If you want to only look at the RGB output, look for the image file name appended with merged_result, e.g. lenamerged_result.jpg
+
+# Sample Test Run Results
+
+Below is the test run results after runnning the test run script with cutoff frequency of 100 and alpha of 1.0.
+
+<div style="display: flex; align-items: center; gap: 20px; margin-bottom: 50px;">
+  <div style="">
+    <p>Before:</p>
+    <img src="unnamed_cropped.jpg" alt="Before" width="300">
+  </div>
+  <div style="">
+    <p>After:</p>
+    <img src="unnamedmerged_result_cropped.jpg" alt="After" width="300">
+  </div>
+</div>
 
 # Project Setup and Usage Guide For Seeing the Performance Comparison between Serial, OMP, and CUDA
 
