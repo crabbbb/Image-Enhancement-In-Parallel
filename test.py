@@ -320,7 +320,7 @@ def drawRuntimeLineGraph(df, imageName, basePath) :
     plt.savefig(f'{basePath}{imageName}_runtime.png')
 
 def drawAverageRuntimeBarPlot(imageName, result, basePath) : 
-    x = ["serial", "omp", "cuda"]
+    x = ["serial", "omp (8 threads)", "cuda (256 threads)"]
 
     y = []
 

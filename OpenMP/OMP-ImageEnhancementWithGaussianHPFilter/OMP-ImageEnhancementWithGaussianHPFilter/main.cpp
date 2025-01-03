@@ -16,14 +16,15 @@ const double CUTOFF_FREQUENCY = 100;
 const double ALPHA = 1.0;
 
 // all the processing done here 
-cv::Mat startProcessing(cv::Mat& in_img, string imName) {
+cv::Mat startProcessing(cv::Mat& in_img, string imName, string color) {
 
     // get width and height 
     int width = in_img.cols;
     int height = in_img.rows;
 
     // convert image to grayscale 
-    uint8_t* grayscaleImage = rgb_to_grayscale(in_img.data, width, height);
+    //uint8_t* channelImage = rgb_to_grayscale(in_img.data, width, height);
+    uint8_t* channelImage = in_img.data;
 
     // start time 
     auto start = chrono::high_resolution_clock::now();
@@ -31,7 +32,7 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
     // Zero-pad the image to power-of-two dimensions
     int paddedWidth, paddedHeight;
     uint8_t* padded_image = zeroPad2D(
-        grayscaleImage,  // original data
+        channelImage,  // original data
         width,          // old width
         height,         // old height
         paddedWidth,       // [out] new width
@@ -87,19 +88,19 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 
     // save image 
     // ------------ this path is for using python execute ------------------------------
-    cv::imwrite("resource/result/omp/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
-    cv::imwrite("resource/result/omp/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
-    cv::imwrite("resource/result/omp/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
+    //cv::imwrite("resource/result/omp/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
+    //cv::imwrite("resource/result/omp/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
+    //cv::imwrite("resource/result/omp/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
     // ------------ this path is for using visual studio ------------------------------
-    //cv::imwrite("../../../resource/result/omp/" + imName + "_gray.jpg", fromUint8ToMat(grayscaleImage, width, height));
-    //cv::imwrite("../../../resource/result/omp/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
-    //cv::imwrite("../../../resource/result/omp/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
+    cv::imwrite("../../../resource/result/omp/" + imName + "_gray.jpg", fromUint8ToMat(channelImage, width, height));
+    cv::imwrite("../../../resource/result/omp/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
+    cv::imwrite("../../../resource/result/omp/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
     // convert back
     cv::Mat out_img = fromUint8ToMat(ifftImage, width, height);
-    cv::imwrite("resource/result/omp/" + imName + "_ifft.jpg", out_img);
-    //cv::imwrite("../../../resource/result/omp/" + imName + "_ifft.jpg", out_img);
+    //cv::imwrite("resource/result/omp/" + imName + "_ifft.jpg", out_img);
+    cv::imwrite("../../../resource/result/omp/" + imName + "_ifft.jpg", out_img);
 
     return out_img;
 }
@@ -107,10 +108,10 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 int main(int argc, char* argv[])
 {
     //string image[] = { "doggo.jpg", "cameragirl.jpeg", "lena.jpeg", "wolf.jpg" };
-    string image[] = { "cameragirl.jpeg" };
+    string image[] = { "lena.jpeg" };
 
-    string basePath = "resource/raw/";
-    //string basePath = "../../../resource/raw/";
+    //string basePath = "resource/raw/";
+    string basePath = "../../../resource/raw/";
 
     cv::Mat rgbImage;
     cv::Mat out;
@@ -122,7 +123,39 @@ int main(int argc, char* argv[])
 
         for (int i = 0; i < N; i++) {
             rgbImage = cv::imread(completePath);
-            out = startProcessing(rgbImage, imName);
+
+            vector<cv::Mat> bgrChannels;
+            cv::split(rgbImage, bgrChannels);
+
+            // Resize the output to hold the same number of channels (usually 3 for BGR)
+            vector<cv::Mat> output(bgrChannels.size());
+
+            // Process each channel separately.
+            for (int c = 0; c < rgbImage.channels(); c++) {                
+
+                string color = "";
+                switch (c) {
+                case 0: 
+                    color = "blue";
+                    break;
+                case 1: 
+                    color = "green";
+                    break;
+                case 2: 
+                    color = "red";
+                    break;
+                }
+
+                cv::Mat processedChannel = startProcessing(bgrChannels[c], imName, color);
+
+                cv::imwrite("../../../resource/result/omp/" + imName + "channel_" + color + ".jpg", processedChannel);
+
+                bgrChannels[c] = processedChannel;
+            }
+
+            cv::Mat mergedResult;
+            cv::merge(bgrChannels, mergedResult);
+            cv::imwrite("../../../resource/result/omp/" + imName + "merged_result.jpg", mergedResult);
         }
     }
     
