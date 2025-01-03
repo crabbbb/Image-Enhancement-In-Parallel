@@ -16,7 +16,7 @@ const double CUTOFF_FREQUENCY = 100;
 const double ALPHA = 1.0;
 
 // all the processing done here 
-cv::Mat startProcessing(cv::Mat& in_img, string imName) {
+cv::Mat startProcessing(cv::Mat& in_img, string imName, int cutoff_frequency, double alpha, bool isArgument = true) {
 
     // get width and height 
     int width = in_img.cols;
@@ -50,7 +50,7 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 
     // apply Gaussian High-Pass Filter
     cout << "Applying unsharp masking with Gaussian High-Pass Filter..." << endl;
-    cuDoubleComplex** filteredResult = unsharpMaskingFrequencyDomain(fftResult, paddedWidth, paddedHeight, CUTOFF_FREQUENCY, ALPHA);
+    cuDoubleComplex** filteredResult = unsharpMaskingFrequencyDomain(fftResult, paddedWidth, paddedHeight, cutoff_frequency, alpha);
 
     // convert the gaussian complex to uint8_t with stop the timer 
     auto gaussianConvertStart = chrono::high_resolution_clock::now();
@@ -80,8 +80,11 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 
     cout << "Total duration time used for CUDA is " << duration << "ms " << endl;
 
-    storeDataIntoFile(duration, "cuda", imName);
-
+    // only when is not argument then can write the file 
+    if (!isArgument) {
+        storeDataIntoFile(duration, "cuda", imName);
+    }
+    
     // save image 
     // ------------ this path is for using python execute ------------------------------
     cv::imwrite("resource/result/cuda/" + imName + "_gray.jpg", fromUint8ToMat(channelImage, width, height));
@@ -119,13 +122,94 @@ bool isImageFile(const string& file_path) {
     return find(valid_extensions.begin(), valid_extensions.end(), extension) != valid_extensions.end();
 }
 
+// will process multiple color channel with the passing argument 
+void processRGB(int cutoff_frequency, double alpha, string file_path)  
+{
+    cv::Mat rgbImage;
+    cv::Mat out;
+
+    string imName = filesystem::path(file_path).stem().string();
+
+    rgbImage = cv::imread(file_path);
+
+    vector<cv::Mat> bgrChannels;
+    cv::split(rgbImage, bgrChannels);
+
+    // Resize the output to hold the same number of channels (usually 3 for BGR)
+    vector<cv::Mat> output(bgrChannels.size());
+
+    // Process each channel separately.
+    for (int c = 0; c < rgbImage.channels(); c++) {
+
+        string color = "";
+        switch (c) {
+        case 0:
+            color = "blue";
+            break;
+        case 1:
+            color = "green";
+            break;
+        case 2:
+            color = "red";
+            break;
+        }
+
+        cv::Mat processedChannel = startProcessing(bgrChannels[c], imName, cutoff_frequency, alpha, false);
+
+        cv::imwrite("../../../resource/result/cuda/" + imName + "channel_" + color + ".jpg", processedChannel);
+
+        bgrChannels[c] = processedChannel;
+    }
+
+    cv::Mat mergedResult;
+    cv::merge(bgrChannels, mergedResult);
+    cv::imwrite("../../../resource/result/cuda/" + imName + "merged_result.jpg", mergedResult);
+}
+
+void processGreyscale()
+{
+    string image[] = { "doggo.jpg", "cameragirl.jpeg", "lena.jpeg", "wolf.jpg" };
+
+    string basePath = "resource/raw/";
+    // string basePath = "../../../resource/raw/";
+
+    cv::Mat rgbImage;
+    cv::Mat out;
+
+    for (string im : image) {
+
+        string imName = filesystem::path(im).stem().string();
+        string completePath = basePath + im;
+
+        for (int i = 0; i < N; i++) {
+            rgbImage = cv::imread(completePath);
+            out = startProcessing(rgbImage, imName, CUTOFF_FREQUENCY, ALPHA);
+        }
+    }
+
+    //cv::Mat oriResize;
+    //cv::resize(rgbImage, oriResize, cv::Size(600, 600));
+    //cv::imshow("Original", oriResize);
+
+    //cv::Mat resultResize;
+    //cv::resize(out, resultResize, cv::Size(600, 600));
+    //cv::imshow("Result", resultResize);
+    //cv::waitKey(0);
+}
+
 void processArguments(int argc, char* argv[]) {
+    if (argc < 5) {
+        cout << "Insufficient number of arguments." << endl;
+        cout << "Usage: exe_file_to_execute -single [cutoff frequency] [alpha] [image file path]" << endl;
+    }
+
     int cutoff_frequency;
     double alpha;
     string file_path = argv[4];
     bool valid_cutoff_frequency = false;
     bool valid_alpha = false;
     bool valid_file = false;
+    cout << "cutoff_frequency" << "\n" << endl;
 
     try {
         cutoff_frequency = stoi(argv[2]);
@@ -176,82 +260,6 @@ void processArguments(int argc, char* argv[]) {
     else {
         cout << "Usage: exe_file_to_execute -single [cutoff frequency] [alpha] [image file path]" << endl;
     }
-}
-
-// will process multiple color channel with the passing argument 
-void processRGB(int cutoff_frequency, double alpha, string file_path)  
-{
-    cv::Mat rgbImage;
-    cv::Mat out;
-
-    string imName = filesystem::path(file_path).stem().string();
-
-    rgbImage = cv::imread(file_path);
-
-    vector<cv::Mat> bgrChannels;
-    cv::split(rgbImage, bgrChannels);
-
-    // Resize the output to hold the same number of channels (usually 3 for BGR)
-    vector<cv::Mat> output(bgrChannels.size());
-
-    // Process each channel separately.
-    for (int c = 0; c < rgbImage.channels(); c++) {
-
-        string color = "";
-        switch (c) {
-        case 0:
-            color = "blue";
-            break;
-        case 1:
-            color = "green";
-            break;
-        case 2:
-            color = "red";
-            break;
-        }
-
-        cv::Mat processedChannel = startProcessing(bgrChannels[c], imName, cutoff_frequency, alpha);
-
-        cv::imwrite("../../../resource/result/cuda/" + imName + "channel_" + color + ".jpg", processedChannel);
-
-        bgrChannels[c] = processedChannel;
-    }
-
-    cv::Mat mergedResult;
-    cv::merge(bgrChannels, mergedResult);
-    cv::imwrite("../../../resource/result/cuda/" + imName + "merged_result.jpg", mergedResult);
-}
-
-void processGreyscale()
-{
-    string image[] = { "doggo.jpg", "cameragirl.jpeg", "lena.jpeg", "wolf.jpg" };
-    // string image[] = { "cameragirl.jpeg" };
-
-    string basePath = "resource/raw/";
-    // string basePath = "../../../resource/raw/";
-
-    cv::Mat rgbImage;
-    cv::Mat out;
-
-    for (string im : image) {
-
-        string imName = filesystem::path(im).stem().string();
-        string completePath = basePath + im;
-
-        for (int i = 0; i < N; i++) {
-            rgbImage = cv::imread(completePath);
-            out = startProcessing(rgbImage, imName, CUTOFF_FREQUENCY, ALPHA);
-        }
-    }
-
-    //cv::Mat oriResize;
-    //cv::resize(rgbImage, oriResize, cv::Size(600, 600));
-    //cv::imshow("Original", oriResize);
-
-    //cv::Mat resultResize;
-    //cv::resize(out, resultResize, cv::Size(600, 600));
-    //cv::imshow("Result", resultResize);
-    //cv::waitKey(0);
 }
 
 int main(int argc, char* argv[])
