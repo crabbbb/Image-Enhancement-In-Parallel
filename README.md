@@ -74,16 +74,10 @@ You can run the compiled file using the following steps:
 
 Below is the test run results after runnning the test run script with cutoff frequency of 100 and alpha of 1.0.
 
-<div style="display: flex; align-items: center; gap: 20px; margin-bottom: 50px;">
-  <div style="">
-    <p>Before:</p>
-    <img src="readmeImage/unnamed_cropped.jpg" alt="Before" width="300">
-  </div>
-  <div style="">
-    <p>After:</p>
-    <img src="readmeImage/unnamedmerged_result_cropped.jpg" alt="After" width="300">
-  </div>
-</div>
+| Before                      | After                       |
+|-----------------------------|-----------------------------|
+| ![Before](readmeImage/unnamed_cropped.jpg) | ![After](readmeImage/unnamedmerged_result_cropped.jpg) |
+
 
 # Project Setup and Usage Guide For Seeing the Performance Comparison between Serial, OMP, and CUDA
 
