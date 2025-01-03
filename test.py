@@ -124,7 +124,7 @@ def compileOMP() :
         "-lopencv_imgcodecs4100",
     ]
 
-    ompBase = r"OpenMP/ImageEnhancementWithGaussianHPFilter/ImageEnhancementWithGaussianHPFilter/"
+    ompBase = r"OpenMP/OMP-ImageEnhancementWithGaussianHPFilter/OMP-ImageEnhancementWithGaussianHPFilter/"
 
     # all the file need to be compile together with main, because have include 
     sourceFiles = [
