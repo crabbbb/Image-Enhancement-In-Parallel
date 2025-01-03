@@ -485,7 +485,7 @@ def resultGenerate() :
     drawEfficiencyBarPlot(result, outBasePath)
 
 def main() : 
-    # runAllCpp()
+    runAllCpp()
     resultGenerate()
 
 if __name__ == "__main__" :

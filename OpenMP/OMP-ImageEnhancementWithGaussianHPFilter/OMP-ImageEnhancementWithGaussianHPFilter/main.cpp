@@ -198,7 +198,7 @@ void processGreyscale()
 void processArguments(int argc, char* argv[]) {
     if (argc < 5) {
         cout << "Insufficient number of arguments." << endl;
-        cout << "Usage: exe_file_to_execute -single [cutoff frequency] [alpha] [image file path]" << endl;
+        cout << "Usage: path/to/exe_file_to_execute -single [cutoff frequency] [alpha] path/to/image_file" << endl;
     }
 
     int cutoff_frequency;
@@ -256,7 +256,7 @@ void processArguments(int argc, char* argv[]) {
         processRGB(cutoff_frequency, alpha, file_path);
     }
     else {
-        cout << "Usage: exe_file_to_execute -single [cutoff frequency] [alpha] [image file path]" << endl;
+        cout << "Usage: path/to/exe_file_to_execute -single [cutoff frequency] [alpha] path/to/image_file" << endl;
     }
 }
 
