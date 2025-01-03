@@ -19,6 +19,9 @@
 #include <cmath>
 #include <cstdlib>   // for std::exit
 #include <cstring>   // for std::memcpy
+#include "Utils.hpp"
+
+using namespace std;
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -289,8 +292,10 @@ static void unflattenHostArray(
 // =====================================================================
 // 6) Public function: Forward 2D FFT (rectangular)
 // =====================================================================
-cuDoubleComplex** FFT2DParallel(cuDoubleComplex** inputImage, int width, int height)
+cuDoubleComplex** FFT2DParallel(uint8_t* inputImage, int width, int height)
 {
+    cuDoubleComplex** complex_image = storeUint8ToCuComplex2D(inputImage, width, height);
+
     // Allocate a new host 2D array for the result
     cuDoubleComplex** fft_result = new cuDoubleComplex * [height];
     for (int i = 0; i < height; i++) {
@@ -299,7 +304,7 @@ cuDoubleComplex** FFT2DParallel(cuDoubleComplex** inputImage, int width, int hei
 
     // Flatten input
     cuDoubleComplex* h_temp = new cuDoubleComplex[width * height];
-    flattenHostArray(inputImage, h_temp, width, height);
+    flattenHostArray(complex_image, h_temp, width, height);
 
     // GPU alloc
     cuDoubleComplex* d_data = nullptr;
@@ -327,7 +332,7 @@ cuDoubleComplex** FFT2DParallel(cuDoubleComplex** inputImage, int width, int hei
 // =====================================================================
 // 7) Public function: Inverse 2D FFT (rectangular)
 // =====================================================================
-cuDoubleComplex** IFFT2DParallel(cuDoubleComplex** freqData, int width, int height)
+uint8_t* IFFT2DParallel(cuDoubleComplex** freqData, int width, int height)
 {
     cuDoubleComplex** spatial_result = new cuDoubleComplex * [height];
     for (int i = 0; i < height; i++) {
@@ -356,7 +361,7 @@ cuDoubleComplex** IFFT2DParallel(cuDoubleComplex** freqData, int width, int heig
     delete[] h_temp;
     cudaFree(d_data);
 
-    return spatial_result;
+    return storeCuComplex2DToUint8(spatial_result, width, height);
 }
 
 // =====================================================================
@@ -388,48 +393,47 @@ cuDoubleComplex** IFFT2DParallel(cuDoubleComplex** freqData, int width, int heig
 //    }
 //    std::cout << std::endl;
 //}
-
+//
 //int main()
 //{
-//    // Example: 4 rows, 6 columns (rectangular)
-//    const int width = 6;
+//    const int width = 4;
 //    const int height = 4;
 //
-//    // Allocate host 2D input
-//    cuDoubleComplex** inputImage = new cuDoubleComplex * [height];
-//    for (int r = 0; r < height; r++) {
-//        inputImage[r] = new cuDoubleComplex[width];
-//    }
+//    uint8_t image[width * height] = {
+//        1,2,3,4,
+//        5,6,7,8,
+//        9,10,11,12,
+//        13,14,15,16,
+//    };
 //
-//    // Fill with some test data
-//    // Let's just do ascending values from 1..(width*height)
-//    int val = 1;
-//    for (int r = 0; r < height; r++) {
-//        for (int c = 0; c < width; c++) {
-//            inputImage[r][c] = make_cuDoubleComplex((double)val++, 0.0);
+//    // Output initial image
+//    cout << "Initial Greyscale Image:" << endl;
+//    for (int i = 0; i < height; ++i) {
+//        for (int j = 0; j < width; ++j) {
+//            cout << static_cast<int>(image[i * width + j]) << " ";
 //        }
+//        cout << endl;
 //    }
-//
-//    // Print input
-//    printComplex2D(inputImage, width, height, "Input Image (real)", false);
 //
 //    // 1) Forward FFT
-//    cuDoubleComplex** freq = FFT2DParallel(inputImage, width, height);
+//    cuDoubleComplex** freq = FFT2DParallel(image, width, height);
 //    printComplex2D(freq, width, height, "Frequency domain (full complex)", true);
 //
 //    // 2) Inverse FFT
-//    cuDoubleComplex** recon = IFFT2DParallel(freq, width, height);
-//    printComplex2D(recon, width, height, "Reconstructed (real parts)", false);
+//    uint8_t* recon = IFFT2DParallel(freq, width, height);
+//    cout << "Reconstructed (real parts)" << endl;
+//    for (int i = 0; i < height; ++i) {
+//        for (int j = 0; j < width; ++j) {
+//            cout << static_cast<int>(recon[i * width + j]) << " ";
+//        }
+//        cout << endl;
+//    }
 //
 //    // Cleanup
 //    for (int r = 0; r < height; r++) {
-//        delete[] inputImage[r];
 //        delete[] freq[r];
-//        delete[] recon[r];
 //    }
-//    delete[] inputImage;
 //    delete[] freq;
-//    delete[] recon;
 //
 //    return 0;
 //}

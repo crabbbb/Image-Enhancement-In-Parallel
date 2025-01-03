@@ -41,16 +41,9 @@ void FFT1D(complex<double>* x, int size) {
 
 // Perform 2D FFT by applying 1D FFT row-wise and column-wise
 // Returns a new 2D array containing the FFT result.
-complex<double>** FFT2D(complex<double>** image, int width, int height) {
+complex<double>** FFT2D(const uint8_t* image, int width, int height) {
     // Step 1: Create a new array to store the FFT result
-    complex<double>** fft_result = new complex<double>*[height];
-    for (int i = 0; i < height; ++i) {
-        fft_result[i] = new complex<double>[width];
-        // Copy the input image data into the new array
-        for (int j = 0; j < width; ++j) {
-            fft_result[i][j] = image[i][j];
-        }
-    }
+    complex<double>** fft_result = storeUint8ToComplex2D(image, width, height);
 
     // Step 2: Apply 1D FFT row-wise on the new array
     for (int i = 0; i < height; ++i) {
@@ -89,24 +82,18 @@ bool testFFT2D() {
         17, 18, 19, 20,
     };
 
-    // Convert the grayscale image to a 2D array of complex numbers
-    complex<double>** complex_image = convertUint8ToComplex2D(image, width, height);
-
     // Zero-pad the image to power-of-two dimensions
     int newWidth, newHeight;
-    complex<double>** padded_complex_image = zeroPad2D(
-        complex_image,  // original data
+    uint8_t* padded_image = zeroPad2D(
+        image,  // original data
         width,          // old width
         height,         // old height
         newWidth,       // [out] new width
         newHeight       // [out] new height
     );
 
-    // Cleanup original complex_image since we no longer need it
-    cleanup2DArray(complex_image, height);
-
     // Perform 2D FFT
-    complex<double>** fft_result = FFT2D(padded_complex_image, newWidth, newHeight);
+    complex<double>** fft_result = FFT2D(padded_image, newWidth, newHeight);
 
     // Output FFT result
     cout << "FFT2D Result:" << endl;

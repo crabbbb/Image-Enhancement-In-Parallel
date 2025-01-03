@@ -124,7 +124,7 @@ def compileOMP() :
         "-lopencv_imgcodecs4100",
     ]
 
-    ompBase = r"OpenMP/ImageEnhancementWithGaussianHPFilter/ImageEnhancementWithGaussianHPFilter/"
+    ompBase = r"OpenMP/OMP-ImageEnhancementWithGaussianHPFilter/OMP-ImageEnhancementWithGaussianHPFilter/"
 
     # all the file need to be compile together with main, because have include 
     sourceFiles = [
@@ -320,7 +320,7 @@ def drawRuntimeLineGraph(df, imageName, basePath) :
     plt.savefig(f'{basePath}{imageName}_runtime.png')
 
 def drawAverageRuntimeBarPlot(imageName, result, basePath) : 
-    x = ["serial", "omp", "cuda"]
+    x = ["serial", "omp (8 threads)", "cuda (256 threads)"]
 
     y = []
 
@@ -485,7 +485,7 @@ def resultGenerate() :
     drawEfficiencyBarPlot(result, outBasePath)
 
 def main() : 
-    # runAllCpp()
+    runAllCpp()
     resultGenerate()
 
 if __name__ == "__main__" :

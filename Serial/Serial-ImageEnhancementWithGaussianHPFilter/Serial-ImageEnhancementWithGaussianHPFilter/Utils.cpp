@@ -59,7 +59,7 @@ cv::Mat fromUint8ToMat(uint8_t* grayscaleImage, int width, int height) {
 }
 
 // convert uint8_t* grayscale image to a 2D array of complex numbers
-complex<double>** convertUint8ToComplex2D(const uint8_t* image, int width, int height) {
+complex<double>** storeUint8ToComplex2D(const uint8_t* image, int width, int height) {
     complex<double>** complex_image = new complex<double>*[height];
 
     for (int i = 0; i < height; ++i) {
@@ -72,7 +72,7 @@ complex<double>** convertUint8ToComplex2D(const uint8_t* image, int width, int h
     return complex_image;
 }
 
-uint8_t* convertComplex2DToUint8(complex<double>** complex_image, int width, int height) {
+uint8_t* storeComplex2DToUint8(complex<double>** complex_image, int width, int height) {
     // Allocate memory for the output grayscale image
     uint8_t* grayscale_image = new uint8_t[width * height];
 
@@ -107,7 +107,7 @@ void cleanup2DArray(complex<double>**& array, int height) {
 }
 
 // testing section
-void testConversionToAndFromComplex() {
+void testStoringToAndFromComplex() {
     const int width = 4;
     const int height = 4;
 
@@ -129,10 +129,10 @@ void testConversionToAndFromComplex() {
     }
 
     // Convert the grayscale image to a complex 2D array
-    complex<double>** complex_image = convertUint8ToComplex2D(grayscale_image, width, height);
+    complex<double>** complex_image = storeUint8ToComplex2D(grayscale_image, width, height);
 
     // Convert the complex image back to grayscale
-    uint8_t* reconstructed_image = convertComplex2DToUint8(complex_image, width, height);
+    uint8_t* reconstructed_image = storeComplex2DToUint8(complex_image, width, height);
 
     // Print the reconstructed grayscale image
     cout << "Reconstructed Grayscale Image:" << endl;
@@ -180,50 +180,38 @@ complex<double>** allocate2DArray(int height, int width) {
     return array2D;
 }
 
-complex<double>** zeroPad2D(complex<double>** input,
-    int oldWidth, int oldHeight,
-    int& newWidth, int& newHeight)
-{
-    // 1. Find next power of two in both dimensions
+uint8_t* zeroPad2D(const uint8_t* input, int oldWidth, int oldHeight, int& newWidth, int& newHeight) {
+    // 1. Find the next power of two for both dimensions
     newWidth = nextPowerOfTwo(oldWidth);
     newHeight = nextPowerOfTwo(oldHeight);
 
-    // 2. Allocate new 2D array with padded dimensions
-    complex<double>** padded = allocate2DArray(newHeight, newWidth);
+    // 2. Allocate new array with the padded dimensions
+    uint8_t* padded = new uint8_t[newWidth * newHeight];
 
-    // 3. Copy old data to top-left corner and zero-fill the remaining area
-    for (int r = 0; r < newHeight; ++r) {
-        for (int c = 0; c < newWidth; ++c) {
-            if (r < oldHeight && c < oldWidth) {
-                // Copy from original
-                padded[r][c] = input[r][c];
-            }
-            else {
-                // Outside original region -> zero
-                padded[r][c] = complex<double>(0.0, 0.0);
-            }
+    // 3. Initialize the entire array to zeros
+    memset(padded, 0, newWidth * newHeight * sizeof(uint8_t));
+
+    // 4. Copy original data into the top-left corner
+    for (int r = 0; r < oldHeight; ++r) {
+        for (int c = 0; c < oldWidth; ++c) {
+            padded[r * newWidth + c] = input[r * oldWidth + c];
         }
     }
 
     return padded;
 }
 
-complex<double>** unzeroPad2D(complex<double>** padded,
-    int newWidth, int newHeight,
-    int oldWidth, int oldHeight)
-{
-    // 1. Allocate new 2D array for the "cropped" region
-    complex<double>** cropped = allocate2DArray(oldHeight, oldWidth);
+uint8_t* unzeroPad2D(const uint8_t* padded, int newWidth, int newHeight, int oldWidth, int oldHeight) {
+    // 1. Allocate new array for the "cropped" region
+    uint8_t* cropped = new uint8_t[oldWidth * oldHeight];
 
-    // 2. Copy the top-left region from the padded array
+    // 2. Copy data from the top-left corner of the padded array
     for (int r = 0; r < oldHeight; ++r) {
         for (int c = 0; c < oldWidth; ++c) {
-            cropped[r][c] = padded[r][c];
+            cropped[r * oldWidth + c] = padded[r * newWidth + c];
         }
     }
 
-    // 3. Return the "cropped" result
     return cropped;
 }
-
 

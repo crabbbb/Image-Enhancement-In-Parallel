@@ -46,3 +46,7 @@ resource/raw/lena-original.jpeg
 # ipykernel checkpoints
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
+
+# exe files
+*.exe
+resource/raw/unnamed.jpg

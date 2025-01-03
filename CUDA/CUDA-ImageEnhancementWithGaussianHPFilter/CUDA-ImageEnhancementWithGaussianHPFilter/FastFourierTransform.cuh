@@ -63,15 +63,15 @@ static void unflattenHostArray(
     int height
 );
 
-static void printComplex2D(
-    cuDoubleComplex** arr,
-    int w, int h,
-    const char* msg,
-    bool showImag = false
-);
+//static void printComplex2D(
+//    cuDoubleComplex** arr,
+//    int w, int h,
+//    const char* msg,
+//    bool showImag = false
+//);
 
-cuDoubleComplex** FFT2DParallel(cuDoubleComplex** inputImage, int width, int height);
+cuDoubleComplex** FFT2DParallel(uint8_t* inputImage, int width, int height);
 
-cuDoubleComplex** IFFT2DParallel(cuDoubleComplex** freqData, int width, int height);
+uint8_t* IFFT2DParallel(cuDoubleComplex** freqData, int width, int height);
 
 

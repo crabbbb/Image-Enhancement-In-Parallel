@@ -4,14 +4,14 @@
 #include <chrono>
 #include "convertGrayscale.hpp"
 //#include "cv_pipe.h"
-#include "GaussianHPFilter.cuh"
-#include "FastFourierTransform.cuh"
+#include "GaussianHPFilter.hpp"
+#include "FastFourierTransform.hpp"
 #include "Utils.hpp"
 #include <filesystem>
 
 using namespace std;
 
-const int N = 10;
+const int N = 1;
 const double CUTOFF_FREQUENCY = 100;
 const double ALPHA = 1.0;
 
@@ -39,29 +39,31 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName, int cutoff_frequency, do
 
     // Perform forward 2D FFT in-place
     cout << "Performing 2D FFT..." << endl;
-    cuDoubleComplex** fftResult = FFT2DParallel(padded_image, paddedWidth, paddedHeight);
+    
+    complex<double>** fft_results = FFT2D(padded_image, paddedWidth, paddedHeight);
 
     // convert the fft complex to uint8_t with stop the timer 
     auto fftConvertStart = chrono::high_resolution_clock::now();
 
-    uint8_t* fftImage = storeCuComplex2DToUint8(fftResult, paddedWidth, paddedHeight);
+    uint8_t* fftImage = storeComplex2DToUint8(fft_results, paddedWidth, paddedHeight);
 
     auto fftConvertEnd = chrono::high_resolution_clock::now();
 
     // apply Gaussian High-Pass Filter
     cout << "Applying unsharp masking with Gaussian High-Pass Filter..." << endl;
-    cuDoubleComplex** filteredResult = unsharpMaskingFrequencyDomain(fftResult, paddedWidth, paddedHeight, cutoff_frequency, alpha);
+    complex<double>** filteredResult = unsharpMaskingFrequencyDomain(fft_results, paddedWidth, paddedHeight, cutoff_frequency, alpha);
 
     // convert the gaussian complex to uint8_t with stop the timer 
     auto gaussianConvertStart = chrono::high_resolution_clock::now();
 
-    uint8_t* gaussianImage = storeCuComplex2DToUint8(filteredResult, paddedWidth, paddedHeight);
+    uint8_t* gaussianImage = storeComplex2DToUint8(filteredResult, paddedWidth, paddedHeight);
 
     auto gaussianConvertEnd = chrono::high_resolution_clock::now();
 
     // perform Inverse FFT
     cout << "Performing Inverse FFT..." << endl;
-    uint8_t* reconstructedImage = IFFT2DParallel(filteredResult, paddedWidth, paddedHeight);
+    // perform inverse 2D FFT
+    uint8_t* reconstructedImage = IFFT2D(filteredResult, paddedWidth, paddedHeight);
 
     // end time 
     auto end = chrono::high_resolution_clock::now();
@@ -78,32 +80,28 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName, int cutoff_frequency, do
 
     auto duration = (chrono::duration_cast<chrono::milliseconds>(end - start)).count() - fftDifferent - gaussianDifferent;
 
-    cout << "Total duration time used for CUDA is " << duration << "ms " << endl;
+    cout << "Total duration time used for OpenMP is " << duration << "ms " << endl;
 
     // only when is not argument then can write the file 
     if (!isArgument) {
         storeDataIntoFile(duration, "cuda", imName);
     }
-    
+
     // save image 
     // ------------ this path is for using python execute ------------------------------
-    cv::imwrite("resource/result/cuda/" + imName + "_gray.jpg", fromUint8ToMat(channelImage, width, height));
-    cv::imwrite("resource/result/cuda/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
-    cv::imwrite("resource/result/cuda/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
+    cv::imwrite("resource/result/omp/" + imName + "_gray.jpg", fromUint8ToMat(channelImage, width, height));
+    cv::imwrite("resource/result/omp/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
+    cv::imwrite("resource/result/omp/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
     // ------------ this path is for using visual studio ------------------------------
-    //cv::imwrite("../../../resource/result/cuda/" + imName + "_gray.jpg", fromUint8ToMat(channelImage, width, height));
-    //cv::imwrite("../../../resource/result/cuda/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
-    //cv::imwrite("../../../resource/result/cuda/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
+    //cv::imwrite("../../../resource/result/omp/" + imName + "_gray.jpg", fromUint8ToMat(channelImage, width, height));
+    //cv::imwrite("../../../resource/result/omp/" + imName + "_fft.jpg", fromUint8ToMat(fftImage, width, height));
+    //cv::imwrite("../../../resource/result/omp/" + imName + "_gaussian.jpg", fromUint8ToMat(gaussianImage, width, height));
 
     // convert back
     cv::Mat out_img = fromUint8ToMat(ifftImage, width, height);
-    cv::imwrite("resource/result/cuda/" + imName + "_ifft.jpg", out_img);
-    //cv::imwrite("../../../resource/result/cuda/" + imName + "_ifft.jpg", out_img);
-
-    // Cleanup original complexImage since we no longer need it
-    cleanup2DArray(fftResult, paddedHeight);
-    cleanup2DArray(filteredResult, paddedHeight);
+    cv::imwrite("resource/result/omp/" + imName + "_ifft.jpg", out_img);
+    //cv::imwrite("../../../resource/result/omp/" + imName + "_ifft.jpg", out_img);
 
     return out_img;
 }
@@ -154,16 +152,16 @@ void processRGB(int cutoff_frequency, double alpha, string file_path)
             break;
         }
 
-        cv::Mat processedChannel = startProcessing(bgrChannels[c], imName, cutoff_frequency, alpha, false);
+        cv::Mat processedChannel = startProcessing(bgrChannels[c], imName, cutoff_frequency, alpha);
 
-        cv::imwrite("resource/result/cuda/" + imName + "channel_" + color + ".jpg", processedChannel);
+        cv::imwrite("resource/result/omp/" + imName + "channel_" + color + ".jpg", processedChannel);
 
         bgrChannels[c] = processedChannel;
     }
 
     cv::Mat mergedResult;
     cv::merge(bgrChannels, mergedResult);
-    cv::imwrite("resource/result/cuda/" + imName + "merged_result.jpg", mergedResult);
+    cv::imwrite("resource/result/omp/" + imName + "merged_result.jpg", mergedResult);
 }
 
 void processGreyscale()
@@ -171,7 +169,7 @@ void processGreyscale()
     string image[] = { "doggo.jpg", "cameragirl.jpeg", "lena.jpeg", "wolf.jpg" };
 
     string basePath = "resource/raw/";
-    // string basePath = "../../../resource/raw/";
+    //string basePath = "../../../resource/raw/";
 
     cv::Mat rgbImage;
     cv::Mat out;

@@ -38,25 +38,19 @@
 //
 //    double alpha = 1.0;
 //
-//    // Convert the grayscale image to a 2D complex array
-//    cuDoubleComplex** complex_image = convertUint8ToCuComplex2D(image, width, height);
-//
 //    // Zero-pad the image to power-of-two dimensions
 //    int newWidth, newHeight;
-//    cuDoubleComplex** padded_complex_image = zeroPad2D(
-//        complex_image,  // original data
+//    uint8_t* padded_image = zeroPad2D(
+//        image,  // original data
 //        width,          // old width
 //        height,         // old height
 //        newWidth,       // [out] new width
 //        newHeight       // [out] new height
 //    );
 //
-//    // Cleanup original complex_image since we no longer need it
-//    cleanup2DArray(complex_image, height);
-//
 //    // Perform 2D FFT
 //    cout << "Performing 2D FFT..." << endl;
-//    cuDoubleComplex** fft_result = FFT2DParallel(padded_complex_image, newWidth, newHeight);
+//    cuDoubleComplex** fft_result = FFT2DParallel(padded_image, newWidth, newHeight);
 //
 //    // Apply Gaussian High-Pass Filter
 //    cout << "Applying Gaussian High-Pass Filter..." << endl;
@@ -64,25 +58,22 @@
 //
 //    // Perform Inverse FFT
 //    cout << "Performing Inverse FFT..." << endl;
-//    cuDoubleComplex** reconstructed_image = IFFT2DParallel(filtered_result, newWidth, newHeight);
+//    uint8_t* reconstructed_image = IFFT2DParallel(filtered_result, newWidth, newHeight);
 //
-//    cuDoubleComplex** reconstructed_image_with_padding_removed = unzeroPad2D(reconstructed_image, newWidth, newHeight, width, height);
+//    uint8_t* reconstructed_image_with_padding_removed = unzeroPad2D(reconstructed_image, newWidth, newHeight, width, height);
 //
 //    // Output reconstructed results
 //    cout << "Reconstructed Image:" << endl;
 //    for (int i = 0; i < height; ++i) {
 //        for (int j = 0; j < width; ++j) {
-//            cout << reconstructed_image_with_padding_removed[i][j].x << " ";
+//            cout << static_cast<int>(reconstructed_image_with_padding_removed[i * width + j]) << " ";
 //        }
 //        cout << endl;
 //    }
 //
 //    // Cleanup dynamically allocated arrays
-//    cleanup2DArray(padded_complex_image, newHeight);
 //    cleanup2DArray(fft_result, newHeight);
 //    cleanup2DArray(filtered_result, newHeight);
-//    cleanup2DArray(reconstructed_image, newHeight);
-//    cleanup2DArray(reconstructed_image_with_padding_removed, height);
 //
 //    cout << "Test completed successfully!" << endl;
 //}

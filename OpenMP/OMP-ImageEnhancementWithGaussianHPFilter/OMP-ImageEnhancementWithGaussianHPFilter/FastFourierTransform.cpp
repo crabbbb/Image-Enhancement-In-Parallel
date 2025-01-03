@@ -53,7 +53,7 @@ void FFT1D_iterative(complex<double>* x, int n, int sign = +1)
 
         // Precompute the "step" twiddle (a single primitive root of unity)
         double theta = sign * (-2.0 * M_PI / m);
-        complex<double> wm(cos(theta), sin(theta)); 
+        complex<double> wm(cos(theta), sin(theta));
 
         // We apply the butterfly from k=0 in strides of m
         // This is the main loop that you can parallelize if it is large enough
@@ -72,38 +72,18 @@ void FFT1D_iterative(complex<double>* x, int n, int sign = +1)
 
     // If inverse FFT, we need to divide each element by n
     if (sign == -1) {
-        #pragma omp parallel for
+#pragma omp parallel for
         for (int i = 0; i < n; ++i) {
             x[i] /= static_cast<double>(n);
         }
     }
 }
 
-complex<double>** allocate2DComplex(int height, int width) {
-    auto array2D = new complex<double>*[height];
-    for (int i = 0; i < height; ++i) {
-        array2D[i] = new complex<double>[width];
-    }
-    return array2D;
-}
-
-// Allocate a 2D array of complex<double>
-// convert uint8_t* grayscale image to a 2D array of complex numbers
-complex<double>** convertUint8ToComplex2D(const uint8_t* image, int width, int height) {
-    complex<double>** out = allocate2DComplex(height, width);
-    for (int r = 0; r < height; ++r) {
-        for (int c = 0; c < width; ++c) {
-            out[r][c] = complex<double>(static_cast<double>(image[r * width + c]), 0.0);
-        }
-    }
-    return out;
-}
-
 // Perform 2D FFT by doing 1D FFT on rows, then 1D FFT on columns.
 void FFT2D_inplace(complex<double>** data, int width, int height, int sign = +1)
 {
     // 1) FFT each row
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int r = 0; r < height; ++r) {
         FFT1D_iterative(data[r], width, sign);
     }
@@ -111,7 +91,7 @@ void FFT2D_inplace(complex<double>** data, int width, int height, int sign = +1)
     // 2) FFT each column
     // For column FFT, gather each column into a temp buffer, call FFT, then store back.
     // You can parallelize across columns as well.
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int c = 0; c < width; ++c) {
         // Copy column 'c' into temp
         vector<complex<double>> colBuf(height);
@@ -128,6 +108,18 @@ void FFT2D_inplace(complex<double>** data, int width, int height, int sign = +1)
     }
 }
 
+complex<double>** FFT2D(uint8_t* inputImage, int width, int height) {
+    complex<double>** data = storeUint8ToComplex2D(inputImage, width, height);
+    FFT2D_inplace(data, width, height, +1);
+    return data;
+}
+
+uint8_t* IFFT2D(complex<double>** data, int width, int height) {
+    // Optionally, perform inverse 2D FFT (just pass sign = -1)]
+    FFT2D_inplace(data, width, height, -1);
+    return storeComplex2DToUint8(data, width, height);
+}
+
 bool testFFT2D() {
     const int width = 4;
     const int height = 4;
@@ -138,34 +130,39 @@ bool testFFT2D() {
         13, 14, 15, 16
     };
 
-    // Convert the grayscale image to a 2D array of complex numbers
-    complex<double>** complex_image = convertUint8ToComplex2D(image, width, height);
+    cout << "\nOriginal image:\n";
+    for (int i = 0; i < height; ++i) {
+        for (int j = 0; j < width; ++j) {
+            cout << static_cast<int>(image[i * width + j]) << " ";
+        }
+        cout << endl;
+    }
 
-    // Perform forward 2D FFT in-place
-    FFT2D_inplace(complex_image, width, height, +1);
+
+    // Perform forward 2D FFT
+    complex<double>** fft_results = FFT2D(image, width, height);
 
     // Print results
     cout << "Forward FFT2D Result:\n";
     for (int r = 0; r < height; ++r) {
         for (int c = 0; c < width; ++c) {
-            cout << complex_image[r][c] << " ";
+            cout << fft_results[r][c] << " ";
         }
         cout << endl;
     }
 
-    // Optionally, perform inverse 2D FFT (just pass sign = -1)
-    FFT2D_inplace(complex_image, width, height, -1);
+    uint8_t* ifft_results = IFFT2D(fft_results, width, height);
 
     // Print results after inverse (should roughly match the original image)
     cout << "\nAfter Inverse FFT2D (should be close to original):\n";
-    for (int r = 0; r < height; ++r) {
-        for (int c = 0; c < width; ++c) {
-            cout << complex_image[r][c] << " ";
+    for (int i = 0; i < height; ++i) {
+        for (int j = 0; j < width; ++j) {
+            cout << static_cast<int>(ifft_results[i * width + j]) << " ";
         }
         cout << endl;
     }
 
     // Cleanup
-    cleanup2DArray(complex_image, height);
+    cleanup2DArray(fft_results, height);
     return true;
 }

@@ -47,7 +47,7 @@ complex<double>* IFFT1D(complex<double>* x, int size) {
 }
 
 // 2D Inverse Fast Fourier Transform
-complex<double>** IFFT2D(complex<double>** image, int width, int height) {
+uint8_t* IFFT2D(complex<double>** image, int width, int height) {
     // Create a new array to store the IFFT result
     complex<double>** ifft_result = new complex<double>*[height];
     for (int i = 0; i < height; ++i) {
@@ -85,7 +85,9 @@ complex<double>** IFFT2D(complex<double>** image, int width, int height) {
         }
     }
 
-    return ifft_result;
+    uint8_t* resultImage = storeComplex2DToUint8(ifft_result, width, height);
+
+    return resultImage;
 }
 
 // Test function for IFFT2D
@@ -101,64 +103,57 @@ bool testIFFT2D() {
         17, 18, 19, 20,
     };
 
-   
-
-    // Convert the grayscale image to a 2D array of complex numbers
-    complex<double>** complex_image = convertUint8ToComplex2D(image, width, height);
-
     // display original image
     cout << "original image Result:" << endl;
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
-            cout << complex_image[i][j].real() << " "; // Output only the real part
+            cout << static_cast<int>(image[i * width + j]) << " ";
         }
         cout << endl;
     }
 
     // zero pad image
     int newWidth, newHeight;
-    complex<double>** padded_complex_image = zeroPad2D(complex_image, width, height, newWidth, newHeight);
+    uint8_t* padded_image = zeroPad2D(image, width, height, newWidth, newHeight);
 
     // display zero padded image
     cout << "zero padded image Result:" << endl;
     for (int i = 0; i < newHeight; ++i) {
         for (int j = 0; j < newWidth; ++j) {
-            cout << padded_complex_image[i][j].real() << " "; // Output only the real part
+            cout << static_cast<int>(padded_image[i * width + j]) << " ";
         }
         cout << endl;
     }
 
     // Perform 2D FFT
-    complex<double>** fft_result = FFT2D(padded_complex_image, newWidth, newHeight);
+    complex<double>** fft_result = FFT2D(padded_image, newWidth, newHeight);
 
     // Perform 2D IFFT
-    complex<double>** ifft_result = IFFT2D(fft_result, newWidth, newHeight);
+    uint8_t* ifft_result = IFFT2D(fft_result, newWidth, newHeight);
 
     // display zero padded image
     cout << "final result after ifft before padding removed:" << endl;
     for (int i = 0; i < newHeight; ++i) {
         for (int j = 0; j < newWidth; ++j) {
-            cout << ifft_result[i][j].real() << " "; // Output only the real part
+            cout << static_cast<int>(ifft_result[i * width + j]) << " ";
         }
         cout << endl;
     }
 
-    complex<double>** ifft_result_with_padding_removed = unzeroPad2D(ifft_result, newWidth, newHeight, width, height);
+    uint8_t* ifft_result_with_padding_removed = unzeroPad2D(ifft_result, newWidth, newHeight, width, height);
 
     // Output IFFT result (real parts of the reconstructed image)
     cout << "IFFT2D (Reconstructed Image) Result:" << endl;
-    for (int i = 0; i < height; ++i) {
-        for (int j = 0; j < width; ++j) {
-            cout << ifft_result_with_padding_removed[i][j].real() << " "; // Output only the real part
+    for (int i = 0; i < newHeight; ++i) {
+        for (int j = 0; j < newWidth; ++j) {
+            cout << static_cast<int>(ifft_result_with_padding_removed[i * width + j]) << " ";
         }
         cout << endl;
     }
 
     // Cleanup
-    cleanup2DArray(complex_image, height);
     cleanup2DArray(fft_result, height);
-    cleanup2DArray(ifft_result, height);
 
-    return true; // Placeholder: Add actual validation if needed
+    return true;
 }
 
