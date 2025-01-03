@@ -106,8 +106,86 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
     return out_img;
 }
 
+bool isImageFile(const string& file_path) {
+    // List of valid image extensions
+    const vector<string> valid_extensions = { ".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".gif" };
+
+    // Get file extension
+    string extension = filesystem::path(file_path).extension().string();
+
+    // Convert to lowercase for case-insensitive comparison
+    transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+
+    // Check if extension is in the list of valid image extensions
+    return find(valid_extensions.begin(), valid_extensions.end(), extension) != valid_extensions.end();
+}
+
+void processArguments(int argc, char* argv[]) {
+    int cutoff_frequency;
+    double alpha;
+    string file_path = argv[4];
+    bool valid_cutoff_frequency = false;
+    bool valid_alpha = false;
+    bool valid_file = false;
+
+    try {
+        cutoff_frequency = stoi(argv[2]);
+        if (cutoff_frequency < 0 || cutoff_frequency > 255) {
+            cout << "Cutoff frequency must be an integer between 0 and 255." << endl;
+        }
+        else {
+            cout << "Cutoff frequency is valid: " << cutoff_frequency << endl;
+            valid_cutoff_frequency = true;
+        }
+    }
+    catch (const exception& e) {
+        cout << "Invalid cutoff frequency. Please provide an integer." << endl;
+    }
+
+    try {
+        alpha = stod(argv[3]);
+        if (alpha > 0) {
+            cout << "Alpha value is valid for sharpening: " << alpha << endl;
+            valid_alpha = true;
+        }
+        else {
+            cout << "Alpha value must be greater than 0 for sharpening." << endl;
+        }
+    }
+    catch (const exception& e) {
+        cout << "Invalid alpha value. Please provide a valid floating-point number." << endl;
+    }
+
+    // File path validation
+    if (filesystem::exists(file_path)) {
+        if (isImageFile(file_path)) {
+            cout << "File path is valid, and it is an image: " << file_path << endl;
+            valid_file = true;
+        }
+        else {
+            cout << "Invalid file type. Please provide an image file (e.g. .jpg, .jpeg, .png, .bmp, .tiff, .gif)." << endl;
+        }
+    }
+    else {
+        cout << "Invalid file path. The specified file does not exist: " << file_path << endl;
+    }
+
+    if (valid_cutoff_frequency && valid_alpha && valid_file) {
+        cout << "All inputs are valid. Proceeding with processing..." << endl;
+        // Add your processing logic here
+    }
+    else {
+        cout << "Usage: exe_file_to_execute -single [cutoff frequency] [alpha] [image file path]" << endl;
+    }
+}
+
 int main(int argc, char* argv[])
 {
+    if (argc > 1 && strcmp(argv[1], "-single") == 0) {
+        processArguments(argc, argv);
+        return 0;
+    }
+
     string image[] = { "doggo.jpg", "cameragirl.jpeg", "lena.jpeg", "wolf.jpg" };
     //string image[] = { "cameragirl.jpeg" };
 
