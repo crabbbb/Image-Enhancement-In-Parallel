@@ -59,7 +59,7 @@ cv::Mat fromUint8ToMat(uint8_t* grayscaleImage, int width, int height) {
     return out;
 }
 
-uint8_t* convertCuComplex2DToUint8(cuDoubleComplex** complexImage, int width, int height)
+uint8_t* storeCuComplex2DToUint8(cuDoubleComplex** complexImage, int width, int height)
 {
     // Allocate a 1D grayscale array of size 'width * height'
     uint8_t* grayscale = new uint8_t[width * height];
@@ -85,7 +85,7 @@ uint8_t* convertCuComplex2DToUint8(cuDoubleComplex** complexImage, int width, in
 // Converts a 1D grayscale image of size 'width * height' into 
 // a 2D array [height][width] of cuDoubleComplex.
 // The real part is the grayscale value, and the imaginary part is 0.
-cuDoubleComplex** convertUint8ToCuComplex2D(const uint8_t* grayscale, int width, int height)
+cuDoubleComplex** storeUint8ToCuComplex2D(const uint8_t* grayscale, int width, int height)
 {
     // Allocate 'height' pointers, each pointing to an array of 'width'
     cuDoubleComplex** complex2D = new cuDoubleComplex * [height];
@@ -138,10 +138,10 @@ bool testGrayscaleComplexConversion()
     }
 
     // 1) Convert from grayscale -> 2D complex
-    cuDoubleComplex** complex2D = convertUint8ToCuComplex2D(originalGray, width, height);
+    cuDoubleComplex** complex2D = storeUint8ToCuComplex2D(originalGray, width, height);
 
     // 2) Convert from 2D complex -> grayscale
-    uint8_t* reconstructedGray = convertCuComplex2DToUint8(complex2D, width, height);
+    uint8_t* reconstructedGray = storeCuComplex2DToUint8(complex2D, width, height);
 
     // 3) Compare reconstructedGray to originalGray
     bool match = true;
@@ -196,84 +196,37 @@ cuDoubleComplex** allocate2DArray(int height, int width) {
     return array2D;
 }
 
-cuDoubleComplex** zeroPad2D(cuDoubleComplex** input,
-    int oldWidth, int oldHeight,
-    int& newWidth, int& newHeight)
-{
-    // 1. Find next power of two in both dimensions
+uint8_t* zeroPad2D(const uint8_t* input, int oldWidth, int oldHeight, int& newWidth, int& newHeight) {
+    // 1. Find the next power of two for both dimensions
     newWidth = nextPowerOfTwo(oldWidth);
     newHeight = nextPowerOfTwo(oldHeight);
 
+    // 2. Allocate new array with the padded dimensions
+    uint8_t* padded = new uint8_t[newWidth * newHeight];
 
-    // 2. Allocate new 2D array with padded dimensions
-    cuDoubleComplex** padded = allocate2DArray(newHeight, newWidth);
+    // 3. Initialize the entire array to zeros
+    memset(padded, 0, newWidth * newHeight * sizeof(uint8_t));
 
-    // 3. Copy old data to top-left corner and zero-fill the remaining area
-    for (int r = 0; r < newHeight; ++r) {
-        for (int c = 0; c < newWidth; ++c) {
-            if (r < oldHeight && c < oldWidth) {
-                // Copy from original
-                padded[r][c] = input[r][c];
-            }
-            else {
-                // Outside original region -> zero
-                padded[r][c] = make_cuDoubleComplex(0.0, 0.0);
-            }
+    // 4. Copy original data into the top-left corner
+    for (int r = 0; r < oldHeight; ++r) {
+        for (int c = 0; c < oldWidth; ++c) {
+            padded[r * newWidth + c] = input[r * oldWidth + c];
         }
     }
 
     return padded;
 }
 
-//cuDoubleComplex** zeroPad2D(cuDoubleComplex** input,
-//    int oldWidth, int oldHeight,
-//    int& newWidth, int& newHeight, int& newSize)
-//{
-//    // 1. Find next power of two in both dimensions
-//    newWidth = nextPowerOfTwo(oldWidth);
-//    newHeight = nextPowerOfTwo(oldHeight);
-//
-//    if (newWidth > newHeight) {
-//        newSize = newWidth;
-//    }
-//    else {
-//        newSize = newHeight;
-//    }
-//
-//    // 2. Allocate new 2D array with padded dimensions
-//    cuDoubleComplex** padded = allocate2DArray(newSize, newSize);
-//
-//    // 3. Copy old data to top-left corner and zero-fill the remaining area
-//    for (int r = 0; r < newSize; ++r) {
-//        for (int c = 0; c < newSize; ++c) {
-//            if (r < oldHeight && c < oldWidth) {
-//                // Copy from original
-//                padded[r][c] = input[r][c];
-//            }
-//            else {
-//                // Outside original region -> zero
-//                padded[r][c] = make_cuDoubleComplex(0.0, 0.0);
-//            }
-//        }
-//    }
-//
-//    return padded;
-//}
+uint8_t* unzeroPad2D(const uint8_t* padded, int newWidth, int newHeight, int oldWidth, int oldHeight) {
+    // 1. Allocate new array for the "cropped" region
+    uint8_t* cropped = new uint8_t[oldWidth * oldHeight];
 
-cuDoubleComplex** unzeroPad2D(cuDoubleComplex** padded,
-    int newWidth, int newHeight,
-    int oldWidth, int oldHeight)
-{
-    // 1. Allocate new 2D array for the "cropped" region
-    cuDoubleComplex** cropped = allocate2DArray(oldHeight, oldWidth);
-
-    // 2. Copy the top-left region from the padded array
+    // 2. Copy data from the top-left corner of the padded array
     for (int r = 0; r < oldHeight; ++r) {
         for (int c = 0; c < oldWidth; ++c) {
-            cropped[r][c] = padded[r][c];
+            cropped[r * oldWidth + c] = padded[r * newWidth + c];
         }
     }
 
-    // 3. Return the "cropped" result
     return cropped;
 }

@@ -28,29 +28,24 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
     // start time 
     auto start = chrono::high_resolution_clock::now();
 
-    // convert the grayscale image to a 2D complex array
-    cuDoubleComplex** complex_image = convertUint8ToCuComplex2D(grayscaleImage, width, height);
-
     // Zero-pad the image to power-of-two dimensions
-    int paddedWidth, paddedHeight, paddedSquareSize;
-    cuDoubleComplex** padded_complex_image = zeroPad2D(
-        complex_image,  // original data
+    int paddedWidth, paddedHeight;
+    uint8_t* padded_image = zeroPad2D(
+        grayscaleImage,  // original data
         width,          // old width
         height,         // old height
         paddedWidth,       // [out] new width
         paddedHeight       // [out] new height
     );
 
-    
-
     // Perform forward 2D FFT in-place
     cout << "Performing 2D FFT..." << endl;
-    cuDoubleComplex** fftResult = FFT2DParallel(padded_complex_image, paddedWidth, paddedHeight);
+    cuDoubleComplex** fftResult = FFT2DParallel(padded_image, paddedWidth, paddedHeight);
 
     // convert the fft complex to uint8_t with stop the timer 
     auto fftConvertStart = chrono::high_resolution_clock::now();
 
-    uint8_t* fftImage = convertCuComplex2DToUint8(fftResult, paddedWidth, paddedHeight);
+    uint8_t* fftImage = storeCuComplex2DToUint8(fftResult, paddedWidth, paddedHeight);
 
     auto fftConvertEnd = chrono::high_resolution_clock::now();
 
@@ -61,22 +56,22 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
     // convert the gaussian complex to uint8_t with stop the timer 
     auto gaussianConvertStart = chrono::high_resolution_clock::now();
 
-    uint8_t* gaussianImage = convertCuComplex2DToUint8(filteredResult, paddedWidth, paddedHeight);
+    uint8_t* gaussianImage = storeCuComplex2DToUint8(filteredResult, paddedWidth, paddedHeight);
 
     auto gaussianConvertEnd = chrono::high_resolution_clock::now();
 
     // perform Inverse FFT
     cout << "Performing Inverse FFT..." << endl;
-    cuDoubleComplex** reconstructedImage = IFFT2DParallel(filteredResult, paddedWidth, paddedHeight);
+    uint8_t* reconstructedImage = IFFT2DParallel(filteredResult, paddedWidth, paddedHeight);
 
     // end time 
     auto end = chrono::high_resolution_clock::now();
 
     // crop the image back to original size
-    cuDoubleComplex** reconstructedImageWithPaddingRemoved = unzeroPad2D(reconstructedImage, paddedWidth, paddedHeight, width, height);
+    uint8_t* reconstructedImageWithPaddingRemoved = unzeroPad2D(reconstructedImage, paddedWidth, paddedHeight, width, height);
 
     // convert the ifft result back to uint8_t 
-    uint8_t* ifftImage = convertCuComplex2DToUint8(reconstructedImageWithPaddingRemoved, width, height);
+    uint8_t* ifftImage = reconstructedImageWithPaddingRemoved;
 
     // calculate the different between fft and gaussian start end 
     auto fftDifferent = (chrono::duration_cast<chrono::milliseconds>(fftConvertEnd - fftConvertEnd)).count();
@@ -105,11 +100,8 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
     //cv::imwrite("../../../resource/result/cuda/" + imName + "_ifft.jpg", out_img);
 
     // Cleanup original complexImage since we no longer need it
-    cleanup2DArray(complex_image, height);
     cleanup2DArray(fftResult, paddedHeight);
     cleanup2DArray(filteredResult, paddedHeight);
-    cleanup2DArray(reconstructedImage, paddedHeight);
-    cleanup2DArray(reconstructedImageWithPaddingRemoved, height);
 
     return out_img;
 }
@@ -117,6 +109,7 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 int main(int argc, char* argv[])
 {
     string image[] = { "doggo.jpg", "cameragirl.jpeg", "lena.jpeg", "wolf.jpg" };
+    //string image[] = { "cameragirl.jpeg" };
 
     string basePath = "resource/raw/";
     //string basePath = "../../../resource/raw/";
