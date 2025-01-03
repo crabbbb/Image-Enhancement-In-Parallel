@@ -156,14 +156,14 @@ void processRGB(int cutoff_frequency, double alpha, string file_path)
 
         cv::Mat processedChannel = startProcessing(bgrChannels[c], imName, cutoff_frequency, alpha, false);
 
-        cv::imwrite("../../../resource/result/cuda/" + imName + "channel_" + color + ".jpg", processedChannel);
+        cv::imwrite("resource/result/cuda/" + imName + "channel_" + color + ".jpg", processedChannel);
 
         bgrChannels[c] = processedChannel;
     }
 
     cv::Mat mergedResult;
     cv::merge(bgrChannels, mergedResult);
-    cv::imwrite("../../../resource/result/cuda/" + imName + "merged_result.jpg", mergedResult);
+    cv::imwrite("resource/result/cuda/" + imName + "merged_result.jpg", mergedResult);
 }
 
 void processGreyscale()
@@ -200,7 +200,7 @@ void processGreyscale()
 void processArguments(int argc, char* argv[]) {
     if (argc < 5) {
         cout << "Insufficient number of arguments." << endl;
-        cout << "Usage: exe_file_to_execute -single [cutoff frequency] [alpha] [image file path]" << endl;
+        cout << "Usage: /path/to/exe_file_to_execute -single [cutoff frequency] [alpha] [image file path]" << endl;
     }
 
     int cutoff_frequency;
