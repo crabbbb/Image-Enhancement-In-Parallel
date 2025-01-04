@@ -11,7 +11,7 @@
 
 using namespace std;
 
-const int N = 1;
+const int N = 10;
 const double CUTOFF_FREQUENCY = 100;
 const double ALPHA = 1.0;
 
@@ -152,7 +152,7 @@ void processRGB(int cutoff_frequency, double alpha, string file_path)
             break;
         }
 
-        cv::Mat processedChannel = startProcessing(bgrChannels[c], imName, cutoff_frequency, alpha);
+        cv::Mat processedChannel = startProcessing(bgrChannels[c], imName, cutoff_frequency, alpha, true);
 
         cv::imwrite("resource/result/omp/" + imName + "channel_" + color + ".jpg", processedChannel);
 
@@ -167,6 +167,7 @@ void processRGB(int cutoff_frequency, double alpha, string file_path)
 void processGreyscale()
 {
     string image[] = { "doggo.jpg", "cameragirl.jpeg", "lena.jpeg", "wolf.jpg" };
+    //string image[] = { "lena.jpeg" };
 
     string basePath = "resource/raw/";
     //string basePath = "../../../resource/raw/";
@@ -181,7 +182,7 @@ void processGreyscale()
 
         for (int i = 0; i < N; i++) {
             rgbImage = cv::imread(completePath);
-            out = startProcessing(rgbImage, imName, CUTOFF_FREQUENCY, ALPHA);
+            out = startProcessing(rgbImage, imName, CUTOFF_FREQUENCY, ALPHA, false);
         }
     }
 
@@ -265,6 +266,9 @@ int main(int argc, char* argv[])
     if (argc > 1 && strcmp(argv[1], "-single") == 0) {
         processArguments(argc, argv);
         return 0;
+    }
+    else {
+        cout << "-single argument not detected, program running normally..." << endl;
     }
 
     processGreyscale();

@@ -154,7 +154,7 @@ void processRGB(int cutoff_frequency, double alpha, string file_path)
             break;
         }
 
-        cv::Mat processedChannel = startProcessing(bgrChannels[c], imName, cutoff_frequency, alpha, false);
+        cv::Mat processedChannel = startProcessing(bgrChannels[c], imName, cutoff_frequency, alpha);
 
         cv::imwrite("resource/result/cuda/" + imName + "channel_" + color + ".jpg", processedChannel);
 
@@ -183,7 +183,7 @@ void processGreyscale()
 
         for (int i = 0; i < N; i++) {
             rgbImage = cv::imread(completePath);
-            out = startProcessing(rgbImage, imName, CUTOFF_FREQUENCY, ALPHA);
+            out = startProcessing(rgbImage, imName, CUTOFF_FREQUENCY, ALPHA, false);
         }
     }
 
@@ -267,6 +267,9 @@ int main(int argc, char* argv[])
     if (argc > 1 && strcmp(argv[1], "-single") == 0) {
         processArguments(argc, argv);
         return 0;
+    }
+    else {
+        cout << "-single argument not detected, program running normally..." << endl;
     }
 
     processGreyscale();
