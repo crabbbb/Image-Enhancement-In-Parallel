@@ -11,7 +11,7 @@
 
 using namespace std;
 
-const int N = 1;
+const int N = 10;
 const double CUTOFF_FREQUENCY = 100;
 const double ALPHA = 1.0;
 
@@ -66,7 +66,7 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName) {
 
     cout << "Total duration time used for Serial is " << duration << "ms " << endl;
 
-    //storeDataIntoFile(duration, "serial", imName);
+    storeDataIntoFile(duration, "serial", imName);
 
     // convert the complex<double> to uint8_t
     uint8_t* frequencyImage = storeComplex2DToUint8(fftResult, paddedWidth, paddedHeight);
