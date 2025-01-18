@@ -105,6 +105,7 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName, int cutoff_frequency, do
     return out_img;
 }
 
+// processing for rgb
 cv::Mat startProcessingRGB(cv::Mat& in_img, string imName, int cutoff_frequency, double alpha) {
 
     // get width and height 
