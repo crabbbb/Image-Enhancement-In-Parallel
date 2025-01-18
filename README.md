@@ -5,6 +5,8 @@ Distributed System and Parallel Computing Course Assignment, which required to u
 - Image Enhancement with using Gaussian High Pass Filter
 - Transfer Image from Spatial domain to Frequency Domain with using Fast-Fourier Transform ( FFT )
 
+[Presentation slides](readmePdf/image_enhancement_slide.pdf)
+
 # Requirements
 
 For Python :
@@ -72,12 +74,23 @@ You can run the compiled file using the following steps:
 
 # Sample Test Run Results
 
-Below is the test run results after runnning the test run script with cutoff frequency of 100 and alpha of 1.0.
+Below is the test run results after runnning the test run script with `cutoff frequency` of `100` and `alpha` of `1.0`.
 
 | Before                      | After                       |
 |-----------------------------|-----------------------------|
 | ![Before](readmeImage/unnamed_cropped.jpg) | ![After](readmeImage/unnamedmerged_result_cropped.jpg) |
 
+# Results from processing RGB image
+
+Below is the comparison between the original RGB image and the processed image of each RGB channel, as well as the final merged RGB image after processing.
+
+![alt text](readmeImage/rgb_images_comparison.png)
+
+Below is the performance gain and efficiency obtained after processing the image above once. OMP is run using 16 threads, while CUDA is run using 256 threads per block.
+
+| Performance Gain              | Efficiency                  |
+|-------------------------------| --------------------------- |
+| ![Performance Gain Graph](readmeImage/rgb_peformance_gain.png) | ![Efficiency Graph](readmeImage/rgb_efficiency.png) |
 
 # Project Setup and Usage Guide For Seeing the Performance Comparison between Serial, OMP, and CUDA
 
