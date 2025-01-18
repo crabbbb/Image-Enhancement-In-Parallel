@@ -8,7 +8,7 @@
 
 using namespace std;
 
-bool storeDataIntoFile(double time, string fname, string imName) {
+bool storeDataIntoFile(double time, string fname, string imName, int max_line_count) {
 
     string filePath = "resource/timetaken/" + fname + "_" + imName + ".txt";
     //string filePath = "../../../resource/timetaken/" + fname + "_" + imName + ".txt";
@@ -27,7 +27,7 @@ bool storeDataIntoFile(double time, string fname, string imName) {
 
         readFile.close();
 
-        if (line_count < 10) {
+        if (line_count < max_line_count) {
             // write data into file with append 
             ofstream appendFile(filePath, ios::app);
 
@@ -38,7 +38,7 @@ bool storeDataIntoFile(double time, string fname, string imName) {
         }
     }
 
-    // if bigger than 10 
+    // if bigger than lineCount 
     // overwrite the file 
     ofstream writeFile(filePath);
 

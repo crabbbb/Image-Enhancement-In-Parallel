@@ -4,7 +4,7 @@
 
 using namespace std;
 
-bool storeDataIntoFile(double time, string fname, string imName);
+bool storeDataIntoFile(double time, string fname, string imName, int lineCount);
 cv::Mat fromUint8ToMat(uint8_t* grayscaleImage, int width, int height);
 uint8_t* storeCuComplex2DToUint8(cuDoubleComplex** complexImage, int width, int height);
 cuDoubleComplex** storeUint8ToCuComplex2D(const uint8_t* grayscale, int width, int height);
