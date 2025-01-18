@@ -260,7 +260,6 @@ def runAllCpp() :
     executeExe(f"{EXE_LOCATION}{OMPEXE}")
     executeExe(f"{EXE_LOCATION}{CUDAEXE}")
 
-
 def readByLineInt(filePath) :
     with open(filePath, "r") as file :
         return [int(line.strip()) for line in file]
@@ -338,7 +337,7 @@ def drawAverageRuntimeBarPlot(imageName, result, basePath) :
 
     plt.savefig(f'{basePath}{imageName}_avgruntime.png')
 
-def drawPerformanceGainBarPlot(result, basePath) : 
+def drawPerformanceGainBarPlot(result, basePath, imName = imName) : 
     columns = ["imageName", "platform", "performanceGain"]
 
     parallelPlatform = platform.copy()
@@ -382,7 +381,7 @@ def drawPerformanceGainBarPlot(result, basePath) :
     
     plt.savefig(f'{basePath}peformanceGain.png')
 
-def drawEfficiencyBarPlot(result, basePath) : 
+def drawEfficiencyBarPlot(result, basePath, imName = imName) : 
     columns = ["imageName", "platform", "efficiency"]
 
     parallelPlatform = platform.copy()
