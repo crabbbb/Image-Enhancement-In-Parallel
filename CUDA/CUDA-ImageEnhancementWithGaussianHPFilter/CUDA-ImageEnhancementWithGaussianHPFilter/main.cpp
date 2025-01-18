@@ -14,9 +14,11 @@ using namespace std;
 const int N = 10;
 const double CUTOFF_FREQUENCY = 100;
 const double ALPHA = 1.0;
+const int MAX_GREYSCALE_LINE_STORE_COUNT = 10;
+const int MAX_RGB_LINE_STORE_COUNT = 3;
 
 // all the processing done here 
-cv::Mat startProcessing(cv::Mat& in_img, string imName, int cutoff_frequency, double alpha, bool isArgument = true) {
+cv::Mat startProcessing(cv::Mat& in_img, string imName, int cutoff_frequency, double alpha) {
 
     // get width and height 
     int width = in_img.cols;
@@ -80,10 +82,7 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName, int cutoff_frequency, do
 
     cout << "Total duration time used for CUDA is " << duration << "ms " << endl;
 
-    // only when is not argument then can write the file 
-    if (!isArgument) {
-        storeDataIntoFile(duration, "cuda", imName);
-    }
+    storeDataIntoFile(duration, "cuda", imName, MAX_GREYSCALE_LINE_STORE_COUNT);
     
     // save image 
     // ------------ this path is for using python execute ------------------------------
@@ -100,6 +99,83 @@ cv::Mat startProcessing(cv::Mat& in_img, string imName, int cutoff_frequency, do
     cv::Mat out_img = fromUint8ToMat(ifftImage, width, height);
     cv::imwrite("resource/result/cuda/" + imName + "_ifft.jpg", out_img);
     //cv::imwrite("../../../resource/result/cuda/" + imName + "_ifft.jpg", out_img);
+
+    // Cleanup original complexImage since we no longer need it
+    cleanup2DArray(fftResult, paddedHeight);
+    cleanup2DArray(filteredResult, paddedHeight);
+
+    return out_img;
+}
+
+// processing for rgb
+cv::Mat startProcessingRGB(cv::Mat& in_img, string imName, int cutoff_frequency, double alpha) {
+
+    // get width and height 
+    int width = in_img.cols;
+    int height = in_img.rows;
+
+    uint8_t* channelImage = in_img.data;
+
+    // start time 
+    auto start = chrono::high_resolution_clock::now();
+
+    // Zero-pad the image to power-of-two dimensions
+    int paddedWidth, paddedHeight;
+    uint8_t* padded_image = zeroPad2D(
+        channelImage,  // original data
+        width,          // old width
+        height,         // old height
+        paddedWidth,       // [out] new width
+        paddedHeight       // [out] new height
+    );
+
+    // Perform forward 2D FFT in-place
+    cout << "Performing 2D FFT..." << endl;
+    cuDoubleComplex** fftResult = FFT2DParallel(padded_image, paddedWidth, paddedHeight);
+
+    // convert the fft complex to uint8_t with stop the timer 
+    auto fftConvertStart = chrono::high_resolution_clock::now();
+
+    uint8_t* fftImage = storeCuComplex2DToUint8(fftResult, paddedWidth, paddedHeight);
+
+    auto fftConvertEnd = chrono::high_resolution_clock::now();
+
+    // apply Gaussian High-Pass Filter
+    cout << "Applying unsharp masking with Gaussian High-Pass Filter..." << endl;
+    cuDoubleComplex** filteredResult = unsharpMaskingFrequencyDomain(fftResult, paddedWidth, paddedHeight, cutoff_frequency, alpha);
+
+    // convert the gaussian complex to uint8_t with stop the timer 
+    auto gaussianConvertStart = chrono::high_resolution_clock::now();
+
+    uint8_t* gaussianImage = storeCuComplex2DToUint8(filteredResult, paddedWidth, paddedHeight);
+
+    auto gaussianConvertEnd = chrono::high_resolution_clock::now();
+
+    // perform Inverse FFT
+    cout << "Performing Inverse FFT..." << endl;
+    uint8_t* reconstructedImage = IFFT2DParallel(filteredResult, paddedWidth, paddedHeight);
+
+    // end time 
+    auto end = chrono::high_resolution_clock::now();
+
+    // crop the image back to original size
+    uint8_t* reconstructedImageWithPaddingRemoved = unzeroPad2D(reconstructedImage, paddedWidth, paddedHeight, width, height);
+
+    // convert the ifft result back to uint8_t 
+    uint8_t* ifftImage = reconstructedImageWithPaddingRemoved;
+
+    // calculate the different between fft and gaussian start end 
+    auto fftDifferent = (chrono::duration_cast<chrono::milliseconds>(fftConvertEnd - fftConvertEnd)).count();
+    auto gaussianDifferent = (chrono::duration_cast<chrono::milliseconds>(gaussianConvertEnd - gaussianConvertStart)).count();
+
+    auto duration = (chrono::duration_cast<chrono::milliseconds>(end - start)).count() - fftDifferent - gaussianDifferent;
+
+    cout << "Total duration time used for CUDA is " << duration << "ms " << endl;
+
+    storeDataIntoFile(duration, "cuda", imName, MAX_RGB_LINE_STORE_COUNT);
+
+    // convert back
+    cv::Mat out_img = fromUint8ToMat(ifftImage, width, height);
 
     // Cleanup original complexImage since we no longer need it
     cleanup2DArray(fftResult, paddedHeight);
@@ -154,7 +230,7 @@ void processRGB(int cutoff_frequency, double alpha, string file_path)
             break;
         }
 
-        cv::Mat processedChannel = startProcessing(bgrChannels[c], imName, cutoff_frequency, alpha);
+        cv::Mat processedChannel = startProcessingRGB(bgrChannels[c], imName, cutoff_frequency, alpha);
 
         cv::imwrite("resource/result/cuda/" + imName + "channel_" + color + ".jpg", processedChannel);
 
@@ -163,7 +239,10 @@ void processRGB(int cutoff_frequency, double alpha, string file_path)
 
     cv::Mat mergedResult;
     cv::merge(bgrChannels, mergedResult);
-    cv::imwrite("resource/result/cuda/" + imName + "merged_result.jpg", mergedResult);
+    string resultPath = "resource/result/cuda/" + imName + "merged_result.jpg";
+    cv::imwrite(resultPath, mergedResult);
+    // console log result store location
+    cout << "File path of results: " << resultPath << endl;
 }
 
 void processGreyscale()
@@ -183,7 +262,7 @@ void processGreyscale()
 
         for (int i = 0; i < N; i++) {
             rgbImage = cv::imread(completePath);
-            out = startProcessing(rgbImage, imName, CUTOFF_FREQUENCY, ALPHA, false);
+            out = startProcessing(rgbImage, imName, CUTOFF_FREQUENCY, ALPHA);
         }
     }
 
